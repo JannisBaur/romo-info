@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 
 import httpx
 
-from romo_bot.models import WeatherForecast
+from romo_bot.models import StormOutlook, WeatherForecast
 from romo_bot.weather import bucket_day_parts, had_recent_onshore_storm, next_onshore_storm
 
 FORECAST_API_URL = "https://api.open-meteo.com/v1/forecast"
@@ -44,7 +44,9 @@ class OpenMeteoWeatherClient:
         self._timezone = timezone
         self._client = client or httpx.Client(timeout=10.0)
 
-    def fetch_weather_forecast(self) -> tuple[WeatherForecast, WeatherForecast]:
+    def fetch_weather_forecast(
+        self,
+    ) -> tuple[WeatherForecast, WeatherForecast, StormOutlook]:
         response = self._client.get(
             FORECAST_API_URL,
             params={
@@ -74,7 +76,7 @@ class OpenMeteoWeatherClient:
     @staticmethod
     def _parse_response(
         payload: dict[str, Any], today_date: date
-    ) -> tuple[WeatherForecast, WeatherForecast]:
+    ) -> tuple[WeatherForecast, WeatherForecast, StormOutlook]:
         hourly = payload["hourly"]
         all_timestamps = [datetime.fromisoformat(t) for t in hourly["time"]]
         all_temperatures = [float(t) for t in hourly["temperature_2m"]]
@@ -99,7 +101,10 @@ class OpenMeteoWeatherClient:
             [wind_speeds[i] for i in future_indices],
             [wind_directions[i] for i in future_indices],
         )
-        storm_lookahead_through = today_date + timedelta(days=_FORECAST_DAYS_TOTAL - 1)
+        storm_outlook = StormOutlook(
+            upcoming_storm_date=upcoming_storm_date,
+            lookahead_through=today_date + timedelta(days=_FORECAST_DAYS_TOTAL - 1),
+        )
 
         def forecast_for(target_date: date) -> WeatherForecast:
             hour_indices = [i for i, t in enumerate(all_timestamps) if t.date() == target_date]
@@ -124,8 +129,6 @@ class OpenMeteoWeatherClient:
                     [wind_directions[i] for i in past_indices],
                 ),
                 recent_storm_lookback_days=len(past_indices),
-                upcoming_storm_date=upcoming_storm_date,
-                storm_lookahead_through=storm_lookahead_through,
             )
 
-        return forecast_for(today_date), forecast_for(tomorrow_date)
+        return forecast_for(today_date), forecast_for(tomorrow_date), storm_outlook

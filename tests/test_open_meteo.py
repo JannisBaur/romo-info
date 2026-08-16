@@ -77,14 +77,14 @@ def test_fetch_weather_forecast_raises_on_http_error() -> None:
 
 
 def test_fetch_weather_forecast_returns_todays_and_tomorrows_day_parts() -> None:
-    today, tomorrow = OpenMeteoWeatherClient._parse_response(_SUCCESS_PAYLOAD, _TODAY)
+    today, tomorrow, _outlook = OpenMeteoWeatherClient._parse_response(_SUCCESS_PAYLOAD, _TODAY)
 
     assert all(p.summary == "Overcast" and p.temperature_c == 16.0 for p in today.day_parts)
     assert all(p.summary == "Rain showers" and p.temperature_c == 12.0 for p in tomorrow.day_parts)
 
 
 def test_fetch_weather_forecast_uses_correct_daily_values_per_day() -> None:
-    today, tomorrow = OpenMeteoWeatherClient._parse_response(_SUCCESS_PAYLOAD, _TODAY)
+    today, tomorrow, _outlook = OpenMeteoWeatherClient._parse_response(_SUCCESS_PAYLOAD, _TODAY)
 
     assert today.temperature_max_c == 18.0
     assert today.wind_speed_max_kmh == 50.0
@@ -93,29 +93,32 @@ def test_fetch_weather_forecast_uses_correct_daily_values_per_day() -> None:
 
 
 def test_storm_on_today_only_counts_as_recent_for_tomorrow() -> None:
-    today, tomorrow = OpenMeteoWeatherClient._parse_response(_SUCCESS_PAYLOAD, _TODAY)
+    today, tomorrow, _outlook = OpenMeteoWeatherClient._parse_response(_SUCCESS_PAYLOAD, _TODAY)
 
     assert today.recent_onshore_storm is False
     assert tomorrow.recent_onshore_storm is True
 
 
-def test_upcoming_storm_beyond_tomorrow_is_flagged_for_both_days() -> None:
-    today, tomorrow = OpenMeteoWeatherClient._parse_response(_SUCCESS_PAYLOAD, _TODAY)
+def test_upcoming_storm_beyond_tomorrow_is_flagged_once_for_the_whole_report() -> None:
+    _today, _tomorrow, outlook = OpenMeteoWeatherClient._parse_response(_SUCCESS_PAYLOAD, _TODAY)
 
-    assert today.upcoming_storm_date == date(2026, 8, 19)
-    assert tomorrow.upcoming_storm_date == date(2026, 8, 19)
+    assert outlook.upcoming_storm_date == date(2026, 8, 19)
 
 
-def test_lookback_and_lookahead_windows_are_reported_accurately() -> None:
-    today, tomorrow = OpenMeteoWeatherClient._parse_response(_SUCCESS_PAYLOAD, _TODAY)
+def test_lookback_days_differ_between_today_and_tomorrow() -> None:
+    today, tomorrow, _outlook = OpenMeteoWeatherClient._parse_response(_SUCCESS_PAYLOAD, _TODAY)
 
     # Today looks back over exactly the 3 fetched past days; tomorrow's
     # window is one day longer since today itself counts as "past" for it.
     assert today.recent_storm_lookback_days == 3
     assert tomorrow.recent_storm_lookback_days == 4
+
+
+def test_lookahead_reaches_the_end_of_the_requested_forecast_window() -> None:
+    _today, _tomorrow, outlook = OpenMeteoWeatherClient._parse_response(_SUCCESS_PAYLOAD, _TODAY)
+
     # forecast_days=7 starting from today (the 16th) reaches through the 22nd.
-    assert today.storm_lookahead_through == date(2026, 8, 22)
-    assert tomorrow.storm_lookahead_through == date(2026, 8, 22)
+    assert outlook.lookahead_through == date(2026, 8, 22)
 
 
 @respx.mock

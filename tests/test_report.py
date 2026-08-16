@@ -27,8 +27,6 @@ def _weather(*, storm: bool = True) -> WeatherForecast:
         wind_direction_deg=270.0,
         recent_onshore_storm=storm,
         recent_storm_lookback_days=3,
-        upcoming_storm_date=None,
-        storm_lookahead_through=date(2026, 8, 22),
     )
 
 
@@ -64,6 +62,7 @@ def _report() -> DailyReport:
                 amber_note="No recent storm to loosen amber, less likely tomorrow.",
             ),
         ),
+        storm_outlook_note="\U0001f52e No storm forecast through Sat 22 Aug.",
     )
 
 
@@ -101,6 +100,12 @@ def test_amber_notes_for_both_days_are_included() -> None:
     assert "No recent storm" in text
 
 
+def test_storm_outlook_appears_once_not_per_day() -> None:
+    text = ReportFormatter().format(_report())
+    assert text.count("No storm forecast through Sat 22 Aug") == 1
+    assert "Amber storm outlook" in text
+
+
 def test_missing_tide_data_shows_fallback_message() -> None:
     report = _report()
     today = report.days[0]
@@ -112,7 +117,11 @@ def test_missing_tide_data_shows_fallback_message() -> None:
         amber_note=today.amber_note,
     )
     text = ReportFormatter().format(
-        DailyReport(report_date=report.report_date, days=(empty_tide_today, report.days[1]))
+        DailyReport(
+            report_date=report.report_date,
+            days=(empty_tide_today, report.days[1]),
+            storm_outlook_note=report.storm_outlook_note,
+        )
     )
     assert "unavailable" in text.lower()
 
@@ -132,12 +141,14 @@ def test_missing_weather_data_shows_fallback_message() -> None:
             wind_direction_deg=0.0,
             recent_onshore_storm=False,
             recent_storm_lookback_days=3,
-            upcoming_storm_date=None,
-            storm_lookahead_through=date(2026, 8, 22),
         ),
         amber_note=today.amber_note,
     )
     text = ReportFormatter().format(
-        DailyReport(report_date=report.report_date, days=(empty_weather_today, report.days[1]))
+        DailyReport(
+            report_date=report.report_date,
+            days=(empty_weather_today, report.days[1]),
+            storm_outlook_note=report.storm_outlook_note,
+        )
     )
     assert "unavailable" in text.lower()

@@ -16,6 +16,9 @@ class ReportFormatter:
         for day in report.days:
             lines.extend(self._format_day(day))
             lines.append("")
+        lines.append("*Amber storm outlook:*")
+        lines.append(report.storm_outlook_note)
+        lines.append("")
         lines.append("_Sent automatically · data: DMI, open-meteo.com_")
         return "\n".join(lines)
 

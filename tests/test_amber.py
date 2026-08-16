@@ -3,7 +3,13 @@ from __future__ import annotations
 from datetime import date, datetime
 
 from romo_bot.amber import AmberAdvisor
-from romo_bot.models import TideDirection, TideExtreme, TideForecast, WeatherForecast
+from romo_bot.models import (
+    StormOutlook,
+    TideDirection,
+    TideExtreme,
+    TideForecast,
+    WeatherForecast,
+)
 
 _DAYTIME_LOW_TIDE = TideForecast(
     extremes=(
@@ -24,14 +30,7 @@ _MIXED_LOW_TIDES = TideForecast(
 _NO_TIDE = TideForecast(extremes=())
 
 
-def _weather(
-    *,
-    speed_kmh: float,
-    recent_storm: bool,
-    lookback_days: int = 3,
-    upcoming_storm: date | None = None,
-    lookahead_through: date = date(2026, 8, 22),
-) -> WeatherForecast:
+def _weather(*, speed_kmh: float, recent_storm: bool, lookback_days: int = 3) -> WeatherForecast:
     return WeatherForecast(
         day_parts=(),
         temperature_min_c=14.0,
@@ -40,8 +39,6 @@ def _weather(
         wind_direction_deg=270.0,
         recent_onshore_storm=recent_storm,
         recent_storm_lookback_days=lookback_days,
-        upcoming_storm_date=upcoming_storm,
-        storm_lookahead_through=lookahead_through,
     )
 
 
@@ -99,34 +96,32 @@ def test_prefers_daytime_low_tide_over_overnight_one() -> None:
     assert "00:07" not in note
 
 
-def test_upcoming_storm_is_mentioned_as_a_heads_up() -> None:
-    weather = _weather(speed_kmh=15.0, recent_storm=False, upcoming_storm=date(2026, 8, 19))
+def test_suggest_never_mentions_upcoming_storm() -> None:
+    # The per-day verdict only looks backward (has a storm already
+    # happened?) -- the forward-looking outlook is a separate, report-wide
+    # concern handled by describe_outlook(), not duplicated here.
+    weather = _weather(speed_kmh=15.0, recent_storm=True)
 
     note = AmberAdvisor().suggest(weather, _DAYTIME_LOW_TIDE)
+
+    assert "storm forecast" not in note.lower()
+    assert "\n" not in note
+
+
+def test_describe_outlook_names_the_upcoming_storm() -> None:
+    outlook = StormOutlook(
+        upcoming_storm_date=date(2026, 8, 19), lookahead_through=date(2026, 8, 22)
+    )
+
+    note = AmberAdvisor.describe_outlook(outlook)
 
     assert "Wed 19 Aug" in note
     assert "Storm forecast" in note
 
 
-def test_no_upcoming_storm_names_the_date_checked_through() -> None:
-    weather = _weather(
-        speed_kmh=15.0,
-        recent_storm=False,
-        upcoming_storm=None,
-        lookahead_through=date(2026, 8, 22),
-    )
+def test_describe_outlook_names_the_date_checked_through_when_none_found() -> None:
+    outlook = StormOutlook(upcoming_storm_date=None, lookahead_through=date(2026, 8, 22))
 
-    note = AmberAdvisor().suggest(weather, _DAYTIME_LOW_TIDE)
+    note = AmberAdvisor.describe_outlook(outlook)
 
     assert "No storm forecast through Sat 22 Aug" in note
-
-
-def test_recent_and_upcoming_storm_lines_are_visibly_distinct() -> None:
-    weather = _weather(speed_kmh=15.0, recent_storm=False, lookback_days=3, upcoming_storm=None)
-
-    note = AmberAdvisor().suggest(weather, _DAYTIME_LOW_TIDE)
-
-    past_line, future_line = note.split("\n")
-    assert past_line != future_line
-    assert "past 3 days" in past_line
-    assert "through" in future_line

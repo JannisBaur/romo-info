@@ -38,8 +38,17 @@ class WeatherForecast:
     wind_direction_deg: float
     recent_onshore_storm: bool
     recent_storm_lookback_days: int
+
+
+@dataclass(frozen=True, slots=True)
+class StormOutlook:
+    """A single, report-wide look-ahead -- not per-day, since "is a storm
+    coming in the next few days" doesn't depend on whether you're reading
+    today's or tomorrow's section.
+    """
+
     upcoming_storm_date: date | None
-    storm_lookahead_through: date
+    lookahead_through: date
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,3 +64,4 @@ class DayForecast:
 class DailyReport:
     report_date: datetime
     days: tuple[DayForecast, ...]
+    storm_outlook_note: str

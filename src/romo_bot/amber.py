@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from romo_bot.models import TideDirection, TideExtreme, TideForecast, WeatherForecast
+from romo_bot.models import StormOutlook, TideDirection, TideExtreme, TideForecast, WeatherForecast
 
 # Amber washes ashore on Denmark's North Sea coast in two phases: a storm
 # (classically from the SW) loosens it from the seabed, then it's carried
@@ -29,30 +29,29 @@ class AmberAdvisor:
         low_tide_note = self._low_tide_note(tide)
 
         if weather.recent_onshore_storm and is_calm_enough_today:
-            note = f"Good conditions — recent onshore storm, calmer now.{low_tide_note}"
-        elif weather.recent_onshore_storm:
-            note = (
+            return f"Good conditions — recent onshore storm, calmer now.{low_tide_note}"
+        if weather.recent_onshore_storm:
+            return (
                 f"Amber's likely loose from a recent storm, but it's still rough "
                 f"({weather.wind_speed_max_kmh:.0f} km/h) — wait for calmer seas.{low_tide_note}"
             )
-        else:
-            note = (
-                f"No onshore storm in the past {weather.recent_storm_lookback_days} days, so "
-                f"unlikely regardless of the {weather.wind_speed_max_kmh:.0f} km/h "
-                f"wind.{low_tide_note}"
-            )
+        return (
+            f"No onshore storm in the past {weather.recent_storm_lookback_days} days, so "
+            f"unlikely regardless of the {weather.wind_speed_max_kmh:.0f} km/h wind.{low_tide_note}"
+        )
 
-        if weather.upcoming_storm_date is not None:
-            note += (
-                f"\n\U0001f52e Storm forecast {weather.upcoming_storm_date:%a %d %b}"
+    @staticmethod
+    def describe_outlook(outlook: StormOutlook) -> str:
+        """A single, report-wide heads-up on any onshore storm forecast in
+        the next few days -- distinct from suggest()'s per-day verdict,
+        which only looks *backward* at whether a storm already happened.
+        """
+        if outlook.upcoming_storm_date is not None:
+            return (
+                f"\U0001f52e Storm forecast {outlook.upcoming_storm_date:%a %d %b}"
                 " — worth checking again a day or two after that."
             )
-        else:
-            note += (
-                f"\n\U0001f52e No storm forecast through "
-                f"{weather.storm_lookahead_through:%a %d %b}."
-            )
-        return note
+        return f"\U0001f52e No storm forecast through {outlook.lookahead_through:%a %d %b}."
 
     @staticmethod
     def _low_tide_note(tide: TideForecast) -> str:

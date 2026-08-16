@@ -5,7 +5,7 @@ from datetime import date
 import pytest
 
 from romo_bot.amber import AmberAdvisor
-from romo_bot.models import DayPartForecast, TideForecast, WeatherForecast
+from romo_bot.models import DayPartForecast, StormOutlook, TideForecast, WeatherForecast
 from romo_bot.report import ReportFormatter
 from romo_bot.service import DailyReportService
 from tests.fakes import FailingMessageSender, FakeMessageSender, FakeTideSource, FakeWeatherSource
@@ -18,8 +18,6 @@ _TODAY_WEATHER = WeatherForecast(
     wind_direction_deg=270.0,
     recent_onshore_storm=True,
     recent_storm_lookback_days=3,
-    upcoming_storm_date=None,
-    storm_lookahead_through=date(2026, 8, 22),
 )
 _TOMORROW_WEATHER = WeatherForecast(
     day_parts=(DayPartForecast(label="Morning", summary="Cloudy", temperature_c=11.0),),
@@ -29,15 +27,14 @@ _TOMORROW_WEATHER = WeatherForecast(
     wind_direction_deg=200.0,
     recent_onshore_storm=False,
     recent_storm_lookback_days=4,
-    upcoming_storm_date=None,
-    storm_lookahead_through=date(2026, 8, 22),
 )
+_OUTLOOK = StormOutlook(upcoming_storm_date=date(2026, 8, 19), lookahead_through=date(2026, 8, 22))
 
 
 def _service(sender: FakeMessageSender | FailingMessageSender) -> DailyReportService:
     return DailyReportService(
         tide_source=FakeTideSource(TideForecast(extremes=()), TideForecast(extremes=())),
-        weather_source=FakeWeatherSource(_TODAY_WEATHER, _TOMORROW_WEATHER),
+        weather_source=FakeWeatherSource(_TODAY_WEATHER, _TOMORROW_WEATHER, _OUTLOOK),
         sender=sender,
         formatter=ReportFormatter(),
         amber_advisor=AmberAdvisor(),
@@ -73,6 +70,14 @@ def test_run_includes_amber_note_from_advisor() -> None:
 
     _, text = sender.sent[0]
     assert "Amber hunting" in text
+
+
+def test_run_includes_storm_outlook_once() -> None:
+    sender = FakeMessageSender()
+    _service(sender).run()
+
+    _, text = sender.sent[0]
+    assert text.count("Wed 19 Aug") == 1
 
 
 def test_run_propagates_sender_failures() -> None:

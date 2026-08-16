@@ -32,7 +32,9 @@ class DailyReportService:
 
     def run(self) -> None:
         today_tide, tomorrow_tide = self.tide_source.fetch_tide_forecast()
-        today_weather, tomorrow_weather = self.weather_source.fetch_weather_forecast()
+        today_weather, tomorrow_weather, storm_outlook = (
+            self.weather_source.fetch_weather_forecast()
+        )
         now = datetime.now(ZoneInfo(self.timezone))
 
         report = DailyReport(
@@ -53,6 +55,7 @@ class DailyReportService:
                     amber_note=self.amber_advisor.suggest(tomorrow_weather, tomorrow_tide),
                 ),
             ),
+            storm_outlook_note=self.amber_advisor.describe_outlook(storm_outlook),
         )
         message = self.formatter.format(report)
         logger.info("Sending daily report to %s", self.group_jid)
