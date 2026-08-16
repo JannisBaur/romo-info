@@ -56,6 +56,12 @@ sources — this differs from the "onshore wind blows it ashore" folklore
 more commonly cited for Baltic Sea amber coasts, which don't apply to
 Rømø's North Sea side.)
 
+The message also covers **today and tomorrow**, and looks 5 days further
+ahead (`romo_bot.weather.next_onshore_storm`) purely to flag an *upcoming*
+onshore storm worth planning around — e.g. "storm forecast Wed, worth
+checking again a day or two after" — since Open-Meteo's own forecast skill
+drops off well before that horizon, this is a heads-up, not a promise.
+
 WhatsApp sending uses [neonize](https://github.com/krypton-byte/neonize), an
 unofficial client library — WhatsApp's terms don't sanction unofficial
 clients, so there's a small standing risk of the linked number getting
@@ -227,7 +233,8 @@ All four run in CI (`.github/workflows/ci.yml`) on every push/PR to `main`.
   adding a new data source or sender means writing a new class, not editing
   the service (open/closed).
 - **Pure core**: `romo_bot.tide.find_tide_extremes`, `romo_bot.clients.dmi_tide.parse_table`
-  /`extremes_for_date`, `romo_bot.weather.bucket_day_parts`, and
+  /`extremes_for_date`, `romo_bot.weather.bucket_day_parts`
+  /`had_recent_onshore_storm`/`next_onshore_storm`, and
   `romo_bot.amber.AmberAdvisor` are all deterministic (no I/O, no wall-clock
   passed in explicitly where it matters) — cheap to test exhaustively with
   fixed inputs, no network or mocking required.
