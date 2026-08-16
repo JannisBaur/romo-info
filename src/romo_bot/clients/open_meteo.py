@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import time
+from collections.abc import Callable
 from datetime import date, datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -25,6 +27,14 @@ _PAST_DAYS_FOR_STORM_CHECK = 3
 # off well before this horizon, so this is a heads-up, not a promise.
 _FORECAST_DAYS_TOTAL = 7
 
+# This runs unattended once a day via cron -- a single dropped connection
+# (DNS hiccup, a timed-out TLS handshake) shouldn't cost the day's report.
+# Retried: connection-level failures (timeouts, DNS, reset) and 5xx server
+# errors, since both are plausibly transient. Not retried: 4xx errors,
+# since retrying a bad request just wastes the remaining attempts.
+_MAX_ATTEMPTS = 3
+_RETRY_BACKOFF_SECONDS = 2.0
+
 
 class OpenMeteoClientError(RuntimeError):
     """Raised when an Open-Meteo request fails or returns unexpected data."""
@@ -43,40 +53,54 @@ class OpenMeteoWeatherClient:
         timezone: str,
         *,
         client: httpx.Client | None = None,
+        sleep: Callable[[float], None] = time.sleep,
     ) -> None:
         self._latitude = latitude
         self._longitude = longitude
         self._timezone = timezone
         self._client = client or httpx.Client(timeout=10.0)
+        self._sleep = sleep
 
     def fetch_weather_forecast(
         self,
     ) -> tuple[WeatherForecast, WeatherForecast, StormOutlook]:
-        response = self._client.get(
-            FORECAST_API_URL,
-            params={
-                "latitude": self._latitude,
-                "longitude": self._longitude,
-                "hourly": "temperature_2m,weathercode",
-                "daily": (
-                    "temperature_2m_max,temperature_2m_min,"
-                    "wind_speed_10m_max,wind_direction_10m_dominant"
-                ),
-                "timezone": self._timezone,
-                "forecast_days": _FORECAST_DAYS_TOTAL,
-                "past_days": _PAST_DAYS_FOR_STORM_CHECK,
-            },
-        )
-        try:
-            response.raise_for_status()
-        except httpx.HTTPStatusError as exc:
-            raise OpenMeteoClientError(f"Forecast API request failed: {exc}") from exc
-
+        response = self._get_with_retries()
         try:
             today_date = datetime.now(ZoneInfo(self._timezone)).date()
             return self._parse_response(response.json(), today_date)
         except (KeyError, TypeError, ValueError, IndexError) as exc:
             raise OpenMeteoClientError(f"Unexpected forecast API response shape: {exc}") from exc
+
+    def _get_with_retries(self) -> httpx.Response:
+        params: dict[str, str | float | int] = {
+            "latitude": self._latitude,
+            "longitude": self._longitude,
+            "hourly": "temperature_2m,weathercode",
+            "daily": (
+                "temperature_2m_max,temperature_2m_min,"
+                "wind_speed_10m_max,wind_direction_10m_dominant"
+            ),
+            "timezone": self._timezone,
+            "forecast_days": _FORECAST_DAYS_TOTAL,
+            "past_days": _PAST_DAYS_FOR_STORM_CHECK,
+        }
+        attempt = 0
+        while True:
+            attempt += 1
+            is_last_attempt = attempt >= _MAX_ATTEMPTS
+            try:
+                response = self._client.get(FORECAST_API_URL, params=params)
+                response.raise_for_status()
+                return response
+            except httpx.HTTPStatusError as exc:
+                if exc.response.status_code < 500 or is_last_attempt:
+                    raise OpenMeteoClientError(f"Forecast API request failed: {exc}") from exc
+            except httpx.TransportError as exc:
+                if is_last_attempt:
+                    raise OpenMeteoClientError(
+                        f"Forecast API request failed after {_MAX_ATTEMPTS} attempts: {exc}"
+                    ) from exc
+            self._sleep(_RETRY_BACKOFF_SECONDS * attempt)
 
     @staticmethod
     def _parse_response(

@@ -69,11 +69,90 @@ _SUCCESS_PAYLOAD = {
 
 @respx.mock
 def test_fetch_weather_forecast_raises_on_http_error() -> None:
-    respx.get(FORECAST_API_URL).mock(return_value=httpx.Response(500))
-    client = OpenMeteoWeatherClient(latitude=55.1, longitude=8.5, timezone="UTC")
+    route = respx.get(FORECAST_API_URL)
+    route.mock(return_value=httpx.Response(500))
+    client = OpenMeteoWeatherClient(
+        latitude=55.1, longitude=8.5, timezone="UTC", sleep=lambda _seconds: None
+    )
 
     with pytest.raises(OpenMeteoClientError):
         client.fetch_weather_forecast()
+
+    # A 5xx is treated as possibly transient, so all 3 attempts get used.
+    assert route.call_count == 3
+
+
+@respx.mock
+def test_client_error_is_not_retried() -> None:
+    route = respx.get(FORECAST_API_URL)
+    route.mock(return_value=httpx.Response(404))
+    client = OpenMeteoWeatherClient(
+        latitude=55.1, longitude=8.5, timezone="UTC", sleep=lambda _seconds: None
+    )
+
+    with pytest.raises(OpenMeteoClientError):
+        client.fetch_weather_forecast()
+
+    # A 4xx won't fix itself on retry, so only one attempt is made.
+    assert route.call_count == 1
+
+
+@respx.mock
+def test_transient_connection_error_is_retried() -> None:
+    route = respx.get(FORECAST_API_URL)
+    route.mock(
+        side_effect=[
+            httpx.ConnectTimeout("handshake timed out"),
+            httpx.Response(200, json={"unexpected": True}),
+        ]
+    )
+    client = OpenMeteoWeatherClient(
+        latitude=55.1, longitude=8.5, timezone="UTC", sleep=lambda _seconds: None
+    )
+
+    # The second response is a real HTTP reply (just an unexpected shape),
+    # which only gets reached if the first ConnectTimeout was retried past.
+    with pytest.raises(OpenMeteoClientError, match="Unexpected forecast API response shape"):
+        client.fetch_weather_forecast()
+
+    assert route.call_count == 2
+
+
+@respx.mock
+def test_server_error_is_retried_then_succeeds() -> None:
+    route = respx.get(FORECAST_API_URL)
+    route.mock(
+        side_effect=[
+            httpx.Response(503),
+            httpx.Response(200, json={"unexpected": True}),
+        ]
+    )
+    client = OpenMeteoWeatherClient(
+        latitude=55.1, longitude=8.5, timezone="UTC", sleep=lambda _seconds: None
+    )
+
+    with pytest.raises(OpenMeteoClientError, match="Unexpected forecast API response shape"):
+        client.fetch_weather_forecast()
+
+    assert route.call_count == 2
+
+
+@respx.mock
+def test_persistent_connection_errors_exhaust_all_attempts() -> None:
+    route = respx.get(FORECAST_API_URL)
+    route.mock(side_effect=httpx.ConnectTimeout("handshake timed out"))
+    sleeps: list[float] = []
+    client = OpenMeteoWeatherClient(
+        latitude=55.1, longitude=8.5, timezone="UTC", sleep=sleeps.append
+    )
+
+    with pytest.raises(OpenMeteoClientError, match="after 3 attempts"):
+        client.fetch_weather_forecast()
+
+    assert route.call_count == 3
+    # Backoff grows between attempts (2s, then 4s) -- no sleep after the
+    # final, failed attempt.
+    assert sleeps == [2.0, 4.0]
 
 
 def test_fetch_weather_forecast_returns_todays_and_tomorrows_day_parts() -> None:
