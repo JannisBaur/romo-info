@@ -36,7 +36,12 @@ def main() -> None:
     def _on_connected(connected_client: NewClient, _event: object) -> None:
         print("\nJoined groups:\n")
         for group in connected_client.get_joined_groups():
-            print(f"  {group.GroupName!r:40} {group.JID.User}@{group.JID.Server}")
+            # group.GroupName is a struct (Name/NameSetAt/NameSetBy), not a
+            # plain string -- printing it directly (as an earlier version
+            # of this script did) dumps that whole struct instead of just
+            # the name, which reads as if the JID on the next line belongs
+            # to a *different* group than it actually does.
+            print(f"  {group.GroupName.Name!r:40} {group.JID.User}@{group.JID.Server}")
         print("\nCopy the '<id>@g.us' value into the WHATSAPP_GROUP_JID secret.\n")
         connected_client.stop()
 
