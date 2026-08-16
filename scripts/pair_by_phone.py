@@ -40,6 +40,10 @@ logging.basicConfig(level=logging.INFO)
 
 _CONNECT_SETTLE_SECONDS = 3.0
 _PAIR_REQUEST_ATTEMPTS = 3
+# ClientFactory.new_client() requires a jid (reconnecting) or a uuid
+# (first-time pairing) -- any stable string works, it just has to be unique
+# within this session db.
+_PAIRING_CLIENT_UUID = "romo-bot"
 
 
 def main() -> None:
@@ -51,7 +55,7 @@ def main() -> None:
     session_db_path.parent.mkdir(parents=True, exist_ok=True)
 
     factory = ClientFactory(database_name=str(session_db_path))
-    client = factory.new_client()
+    client = factory.new_client(uuid=_PAIRING_CLIENT_UUID)
 
     @client.event(ConnectedEv)  # type: ignore[untyped-decorator]  # neonize ships no stubs
     def _on_connected(_client: NewClient, _event: object) -> None:
