@@ -40,12 +40,30 @@ if TYPE_CHECKING:
 
 logging.basicConfig(level=logging.INFO)
 
-_CONNECT_SETTLE_SECONDS = 3.0
+_CONNECT_SETTLE_SECONDS = 5.0
 _PAIR_REQUEST_ATTEMPTS = 3
+_PAIR_REQUEST_TIMEOUT_SECONDS = 20.0
 # ClientFactory.new_client() requires a jid (reconnecting) or a uuid
 # (first-time pairing) -- any stable string works, it just has to be unique
 # within this session db.
 _PAIRING_CLIENT_UUID = "romo-bot"
+
+
+def _request_pairing_code(client: NewClient, phone: str) -> str | BaseException:
+    """Runs PairPhone() and returns its result or the exception it raised.
+
+    Called from a thread with a bounded join() timeout below -- PairPhone is
+    a blocking call into the underlying Go library with no timeout of its
+    own, so without this it can hang silently and indefinitely if the
+    WhatsApp connection is slow to establish.
+    """
+    try:
+        # neonize ships no stubs, so both PairPhone()'s return value and the
+        # caught exception type are Any to mypy -- see the module override
+        # in pyproject.toml.
+        return client.PairPhone(phone, show_push_notification=True)  # type: ignore[no-any-return]
+    except PairPhoneError as exc:
+        return exc  # type: ignore[no-any-return]
 
 
 def main() -> None:
@@ -72,19 +90,41 @@ def main() -> None:
     # neonize's connect() blocks the calling thread until stop(), so the
     # pairing-code request has to happen from a second thread while the
     # connection is being established.
+    print("Connecting to WhatsApp...", flush=True)
     connect_thread = threading.Thread(target=client.connect, daemon=True)
     connect_thread.start()
     time.sleep(_CONNECT_SETTLE_SECONDS)
 
     code: str | None = None
-    last_error: PairPhoneError | None = None
-    for _attempt in range(_PAIR_REQUEST_ATTEMPTS):
-        try:
-            code = client.PairPhone(phone, show_push_notification=True)
+    last_error: BaseException | None = None
+    for attempt in range(1, _PAIR_REQUEST_ATTEMPTS + 1):
+        print(
+            f"Requesting pairing code (attempt {attempt}/{_PAIR_REQUEST_ATTEMPTS})...", flush=True
+        )
+        # A fresh list per attempt (rather than clearing a shared one) so a
+        # slow attempt that finally returns after we've given up on it can't
+        # race with -- or get mistaken for -- the next attempt's outcome.
+        outcome: list[str | BaseException] = []
+        request_thread = threading.Thread(
+            target=lambda o=outcome: o.append(_request_pairing_code(client, phone)),
+            daemon=True,
+        )
+        request_thread.start()
+        request_thread.join(timeout=_PAIR_REQUEST_TIMEOUT_SECONDS)
+
+        if outcome and isinstance(outcome[0], str):
+            code = outcome[0]
             break
-        except PairPhoneError as exc:
-            last_error = exc
-            time.sleep(2.0)
+        if outcome and isinstance(outcome[0], BaseException):
+            last_error = outcome[0]
+            print(f"  -> failed: {last_error}", flush=True)
+        else:
+            last_error = TimeoutError(
+                f"no response after {_PAIR_REQUEST_TIMEOUT_SECONDS:.0f}s -- the connection to "
+                "WhatsApp likely hasn't been established yet"
+            )
+            print(f"  -> {last_error}", flush=True)
+        time.sleep(2.0)
 
     if code is None:
         sys.exit(f"Could not request a pairing code: {last_error}")
