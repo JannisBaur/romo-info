@@ -36,33 +36,55 @@ flagged, even for one message a day to one group.
 
 ## Prerequisites
 
-- Python 3.12+, [Poetry](https://python-poetry.org/).
+- Python 3.12+, [Poetry](https://python-poetry.org/) — or just a browser, see
+  below.
 - **Linux x86_64** — `neonize` currently only ships a manylinux wheel. If
-  you're on macOS/Windows, run the one-time pairing step below inside Docker
-  or a Linux VM/WSL. The GitHub Actions runners are Linux, so the scheduled
-  job itself is unaffected.
+  you're on macOS/Windows, run the one-time pairing step below inside Docker,
+  a Linux VM/WSL, or Codespaces (see below). The GitHub Actions runners are
+  Linux, so the scheduled job itself is unaffected.
 - A WhatsApp account, already a member of the target group.
 
-## One-time setup
+## One-time setup — from just a phone (no computer needed)
 
-1. Install dependencies:
+Pairing needs a real, unrestricted connection to WhatsApp's servers to run
+the script below once — something this repo's automation can't do on your
+behalf. The easiest way to get that from only a phone is **GitHub
+Codespaces**: a full Linux terminal that runs in your phone's browser, free
+for personal use (no install).
+
+WhatsApp's normal QR pairing needs *two* screens (one to show the code, one
+to scan it with the camera) — impossible with one phone. Use
+`scripts/pair_by_phone.py` instead: it gets you a short code to **type**
+into WhatsApp, which works on a single device.
+
+1. On your phone, open **github.com/JannisBaur/romo-bot** → tap **Code** →
+   **Codespaces** tab → **Create codespace on main**. Give it a minute to
+   start; you'll land in a browser-based VS Code with a terminal panel.
+
+2. In that terminal, run:
 
    ```bash
-   poetry install
+   pip install poetry && poetry install
    ```
 
-2. Pair the bot with your WhatsApp account:
+3. Pair by phone number (replace with your own number, country code + digits
+   only, no `+`/spaces/dashes — e.g. `4512345678` for Denmark):
 
    ```bash
-   poetry run python scripts/pair.py
+   WHATSAPP_PHONE_NUMBER=4512345678 poetry run python scripts/pair_by_phone.py
    ```
 
-   Scan the printed QR code with WhatsApp on your phone (**Settings → Linked
-   Devices → Link a Device**). Once it prints "Paired successfully", press
+   It prints an 8-character code. On your phone: **WhatsApp → Settings →
+   Linked Devices → Link a Device → "Link with phone number instead"** →
+   enter the code. Once the terminal prints "Paired successfully", press
    `Ctrl+C`. This creates `data/session.db` — **never commit this file**,
    it's equivalent to being logged into your WhatsApp account.
 
-3. Find the group's JID:
+   If it exits with "Could not request a pairing code", just re-run the
+   command — this happens if the code was requested before the connection to
+   WhatsApp had fully settled, and a retry almost always works.
+
+4. Find the group's JID:
 
    ```bash
    poetry run python scripts/list_groups.py
@@ -70,23 +92,40 @@ flagged, even for one message a day to one group.
 
    Copy the `<id>@g.us` value for your target group.
 
-4. Package the session for GitHub Actions:
+5. Package the session:
 
    ```bash
    base64 -w0 data/session.db > session.b64
+   cat session.b64
    ```
 
-5. In the GitHub repo → **Settings → Secrets and variables → Actions**, add:
-   - `WHATSAPP_SESSION_DB_B64` — contents of `session.b64`
-   - `WHATSAPP_GROUP_JID` — the JID from step 3
+   Copy the printed text (long single line).
 
-   Delete `session.b64` locally afterwards (`rm session.b64`) — it's the
-   same sensitive material as `data/session.db`.
+6. Still on your phone, go to the repo's **Settings → Secrets and variables →
+   Actions** in the browser (works fine on mobile) and add:
+   - `WHATSAPP_SESSION_DB_B64` — the text you copied in step 5
+   - `WHATSAPP_GROUP_JID` — the JID from step 4
 
-6. Push this repo (private!) to GitHub and confirm the **Daily Rømø report**
-   workflow is enabled under the Actions tab. Trigger it once by hand
-   (`workflow_dispatch`) to confirm it sends correctly before waiting for
-   the schedule.
+   Back in the Codespace terminal, run `rm session.b64` — it's the same
+   sensitive material as `data/session.db`. You can also delete the
+   Codespace afterwards (Codespaces list → `...` → Delete) since its only
+   job was this one-time pairing step.
+
+7. In the repo's **Actions** tab, open **Daily Rømø report** → **Run
+   workflow** to trigger it by hand and confirm the message actually arrives
+   before relying on the daily schedule.
+
+### One-time setup — from a computer
+
+If you do have a regular computer (with a phone nearby to scan a QR code),
+the flow is the same as above except step 3 uses the QR script instead:
+
+```bash
+poetry install
+poetry run python scripts/pair.py   # scan the printed QR with WhatsApp
+```
+
+Everything else (steps 4–7 above) is identical.
 
 ### Adjusting the schedule or location
 
@@ -101,8 +140,8 @@ flagged, even for one message a day to one group.
 
 If the scheduled job starts failing with "No paired WhatsApp session found"
 or a connection error, the linked device was likely invalidated by WhatsApp
-(this can happen after long inactivity). Repeat steps 2–5 above to re-pair
-and refresh the secret.
+(this can happen after long inactivity). Repeat the one-time setup above
+(either variant) to re-pair and refresh the `WHATSAPP_SESSION_DB_B64` secret.
 
 ## Development
 
