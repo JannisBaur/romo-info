@@ -60,7 +60,11 @@ The message also covers **today and tomorrow**, and looks 5 days further
 ahead (`romo_bot.weather.next_onshore_storm`) purely to flag an *upcoming*
 onshore storm worth planning around — e.g. "storm forecast Wed, worth
 checking again a day or two after" — since Open-Meteo's own forecast skill
-drops off well before that horizon, this is a heads-up, not a promise.
+drops off well before that horizon, this is a heads-up, not a promise. This
+outlook is report-wide (`StormOutlook`, shown once at the end), not
+duplicated per day, since it's the same forward-looking info regardless of
+which day's section you're reading — only the backward-looking "has a
+storm already happened" check genuinely varies between Today and Tomorrow.
 
 WhatsApp sending uses [neonize](https://github.com/krypton-byte/neonize), an
 unofficial client library — WhatsApp's terms don't sanction unofficial
