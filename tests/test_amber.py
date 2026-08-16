@@ -101,9 +101,9 @@ def test_upcoming_storm_is_mentioned_as_a_heads_up() -> None:
     assert "storm forecast" in note.lower()
 
 
-def test_no_upcoming_storm_omits_heads_up() -> None:
+def test_no_upcoming_storm_says_so_explicitly() -> None:
     weather = _weather(speed_kmh=15.0, recent_storm=False, upcoming_storm=None)
 
     note = AmberAdvisor().suggest(weather, _DAYTIME_LOW_TIDE)
 
-    assert "storm forecast" not in note.lower()
+    assert "No onshore storm forecast" in note

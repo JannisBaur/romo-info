@@ -46,6 +46,8 @@ class AmberAdvisor:
                 f"\n\U0001f30a Onshore storm forecast {weather.upcoming_storm_date:%a %d %b}"
                 " — worth checking again a day or two after."
             )
+        else:
+            note += "\n\U0001f30a No onshore storm forecast in the next few days."
         return note
 
     @staticmethod
