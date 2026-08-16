@@ -56,15 +56,17 @@ sources — this differs from the "onshore wind blows it ashore" folklore
 more commonly cited for Baltic Sea amber coasts, which don't apply to
 Rømø's North Sea side.)
 
-The message also covers **today and tomorrow**, and looks 5 days further
-ahead (`romo_bot.weather.next_onshore_storm`) purely to flag an *upcoming*
-onshore storm worth planning around — e.g. "storm forecast Wed, worth
-checking again a day or two after" — since Open-Meteo's own forecast skill
-drops off well before that horizon, this is a heads-up, not a promise. This
-outlook is report-wide (`StormOutlook`, shown once at the end), not
-duplicated per day, since it's the same forward-looking info regardless of
-which day's section you're reading — only the backward-looking "has a
-storm already happened" check genuinely varies between Today and Tomorrow.
+By default the message covers just **today** (`DAYS_TO_REPORT=1`), to keep
+it short — set `DAYS_TO_REPORT=2` for today + tomorrow, or higher for
+further out. Regardless of that setting, it always looks 5 days beyond the
+last fully-reported day (`romo_bot.weather.next_onshore_storm`) purely to
+flag an *upcoming* onshore storm worth planning around — e.g. "storm
+forecast Wed, worth checking again a day or two after" — since Open-Meteo's
+own forecast skill drops off well before that horizon, this is a heads-up,
+not a promise. This outlook is report-wide (`StormOutlook`, shown once at
+the end), not duplicated per day, since it's the same forward-looking info
+regardless of which day's section you're reading — only the
+backward-looking "has a storm already happened" check varies day to day.
 
 WhatsApp sending uses [neonize](https://github.com/krypton-byte/neonize), an
 unofficial client library — WhatsApp's terms don't sanction unofficial
@@ -194,6 +196,10 @@ Everything else (steps 4–7 above) is identical.
   `LONGITUDE` environment variables if needed. This only affects the
   *weather* forecast — tide data comes from the fixed Havneby station table
   (see below), not these coordinates.
+- Days reported: `DAYS_TO_REPORT` (integer, default `1`) controls how many
+  days get a full tide/weather/amber section, starting today. The
+  day-after-tomorrow onward is labelled by weekday name (e.g. "Wednesday")
+  rather than "Today"/"Tomorrow".
 
 ### Refreshing the tide table
 

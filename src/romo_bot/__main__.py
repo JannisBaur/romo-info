@@ -31,6 +31,7 @@ def main() -> int:
         amber_advisor=AmberAdvisor(),
         group_jid=settings.whatsapp_group_jid,
         timezone=settings.timezone,
+        days_to_report=settings.days_to_report,
     )
 
     try:

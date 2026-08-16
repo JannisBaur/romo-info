@@ -6,14 +6,16 @@ from romo_bot.models import StormOutlook, TideForecast, WeatherForecast
 
 
 class TideDataSource(Protocol):
-    def fetch_tide_forecast(self) -> tuple[TideForecast, TideForecast]:
-        """Returns (today, tomorrow)."""
+    def fetch_tide_forecast(self, days: int) -> tuple[TideForecast, ...]:
+        """Returns `days` consecutive TideForecast entries, starting today."""
         ...
 
 
 class WeatherDataSource(Protocol):
-    def fetch_weather_forecast(self) -> tuple[WeatherForecast, WeatherForecast, StormOutlook]:
-        """Returns (today, tomorrow, storm_outlook)."""
+    def fetch_weather_forecast(self, days: int) -> tuple[tuple[WeatherForecast, ...], StormOutlook]:
+        """Returns (`days` consecutive WeatherForecast entries starting
+        today, storm_outlook).
+        """
         ...
 
 

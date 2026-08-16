@@ -18,8 +18,8 @@ class FakeTideSource:
     today: TideForecast
     tomorrow: TideForecast
 
-    def fetch_tide_forecast(self) -> tuple[TideForecast, TideForecast]:
-        return self.today, self.tomorrow
+    def fetch_tide_forecast(self, days: int) -> tuple[TideForecast, ...]:
+        return (self.today, self.tomorrow)[:days]
 
 
 @dataclass
@@ -28,8 +28,8 @@ class FakeWeatherSource:
     tomorrow: WeatherForecast
     outlook: StormOutlook = field(default_factory=lambda: _DEFAULT_OUTLOOK)
 
-    def fetch_weather_forecast(self) -> tuple[WeatherForecast, WeatherForecast, StormOutlook]:
-        return self.today, self.tomorrow, self.outlook
+    def fetch_weather_forecast(self, days: int) -> tuple[tuple[WeatherForecast, ...], StormOutlook]:
+        return (self.today, self.tomorrow)[:days], self.outlook
 
 
 @dataclass
