@@ -80,7 +80,12 @@ class AmberAdvisor:
         ]
         if daytime_lows:
             best = min(daytime_lows, key=lambda e: e.at)
-            return f" Best around low tide (~{best.at:%H:%M})."
+            # The falling tide *leading up to* low water is the better
+            # window -- ground gets freshly exposed as the water recedes,
+            # and other hunters are looking too. Low tide itself is just
+            # when the most beach happens to be exposed, not necessarily
+            # when the best finds are.
+            return f" Best on the falling tide, low water ~{best.at:%H:%M}."
 
         # Every low tide that day falls overnight -- worth mentioning, but
         # don't imply it's actually a good time to go stand on the beach.

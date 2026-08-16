@@ -103,7 +103,7 @@ def test_overnight_only_low_tide_is_not_recommended_as_best_time() -> None:
 
     note = AmberAdvisor().suggest(weather, _OVERNIGHT_LOW_TIDE)
 
-    assert "Best around low tide" not in note
+    assert "falling tide" not in note.lower()
     assert "overnight" in note.lower()
     assert "00:07" in note
 
@@ -113,7 +113,7 @@ def test_prefers_daytime_low_tide_over_overnight_one() -> None:
 
     note = AmberAdvisor().suggest(weather, _MIXED_LOW_TIDES)
 
-    assert "Best around low tide (~12:14)" in note
+    assert "Best on the falling tide, low water ~12:14" in note
     assert "00:07" not in note
 
 
