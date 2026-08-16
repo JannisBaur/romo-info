@@ -2,8 +2,11 @@ name: Daily Rømø report
 
 on:
   schedule:
-    # 05:00 UTC = ~06:00-07:00 in Europe/Copenhagen depending on DST.
-    - cron: "0 5 * * *"
+    # 04:00 UTC = 06:00 in Europe/Copenhagen during summer time (CEST,
+    # UTC+2). GitHub Actions cron is fixed UTC with no DST awareness, so
+    # this needs bumping to "0 5 * * *" once Denmark switches back to
+    # winter time (CET, UTC+1) -- usually the last Sunday in October.
+    - cron: "0 4 * * *"
   workflow_dispatch: {}
 
 jobs:
