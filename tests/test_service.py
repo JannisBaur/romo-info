@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date
+
 import pytest
 
 from romo_bot.amber import AmberAdvisor
@@ -15,7 +17,9 @@ _TODAY_WEATHER = WeatherForecast(
     wind_speed_max_kmh=10.0,
     wind_direction_deg=270.0,
     recent_onshore_storm=True,
+    recent_storm_lookback_days=3,
     upcoming_storm_date=None,
+    storm_lookahead_through=date(2026, 8, 22),
 )
 _TOMORROW_WEATHER = WeatherForecast(
     day_parts=(DayPartForecast(label="Morning", summary="Cloudy", temperature_c=11.0),),
@@ -24,7 +28,9 @@ _TOMORROW_WEATHER = WeatherForecast(
     wind_speed_max_kmh=15.0,
     wind_direction_deg=200.0,
     recent_onshore_storm=False,
+    recent_storm_lookback_days=4,
     upcoming_storm_date=None,
+    storm_lookahead_through=date(2026, 8, 22),
 )
 
 

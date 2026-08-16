@@ -106,6 +106,18 @@ def test_upcoming_storm_beyond_tomorrow_is_flagged_for_both_days() -> None:
     assert tomorrow.upcoming_storm_date == date(2026, 8, 19)
 
 
+def test_lookback_and_lookahead_windows_are_reported_accurately() -> None:
+    today, tomorrow = OpenMeteoWeatherClient._parse_response(_SUCCESS_PAYLOAD, _TODAY)
+
+    # Today looks back over exactly the 3 fetched past days; tomorrow's
+    # window is one day longer since today itself counts as "past" for it.
+    assert today.recent_storm_lookback_days == 3
+    assert tomorrow.recent_storm_lookback_days == 4
+    # forecast_days=7 starting from today (the 16th) reaches through the 22nd.
+    assert today.storm_lookahead_through == date(2026, 8, 22)
+    assert tomorrow.storm_lookahead_through == date(2026, 8, 22)
+
+
 @respx.mock
 def test_fetch_weather_forecast_raises_on_malformed_payload() -> None:
     respx.get(FORECAST_API_URL).mock(return_value=httpx.Response(200, json={"unexpected": True}))

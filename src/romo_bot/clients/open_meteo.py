@@ -99,6 +99,7 @@ class OpenMeteoWeatherClient:
             [wind_speeds[i] for i in future_indices],
             [wind_directions[i] for i in future_indices],
         )
+        storm_lookahead_through = today_date + timedelta(days=_FORECAST_DAYS_TOTAL - 1)
 
         def forecast_for(target_date: date) -> WeatherForecast:
             hour_indices = [i for i, t in enumerate(all_timestamps) if t.date() == target_date]
@@ -109,7 +110,8 @@ class OpenMeteoWeatherClient:
             )
             day_index = daily_dates.index(target_date)
             # "Past" here means before *this* day -- for tomorrow's storm
-            # check, today itself counts as part of the recent past.
+            # check, today itself counts as part of the recent past, so
+            # tomorrow's lookback is naturally one day longer than today's.
             past_indices = [i for i, d in enumerate(daily_dates) if d < target_date]
             return WeatherForecast(
                 day_parts=day_parts,
@@ -121,7 +123,9 @@ class OpenMeteoWeatherClient:
                     [wind_speeds[i] for i in past_indices],
                     [wind_directions[i] for i in past_indices],
                 ),
+                recent_storm_lookback_days=len(past_indices),
                 upcoming_storm_date=upcoming_storm_date,
+                storm_lookahead_through=storm_lookahead_through,
             )
 
         return forecast_for(today_date), forecast_for(tomorrow_date)

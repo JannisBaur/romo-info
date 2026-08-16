@@ -37,17 +37,21 @@ class AmberAdvisor:
             )
         else:
             note = (
-                f"No onshore storm in the past few days, so unlikely regardless of "
-                f"the {weather.wind_speed_max_kmh:.0f} km/h wind.{low_tide_note}"
+                f"No onshore storm in the past {weather.recent_storm_lookback_days} days, so "
+                f"unlikely regardless of the {weather.wind_speed_max_kmh:.0f} km/h "
+                f"wind.{low_tide_note}"
             )
 
         if weather.upcoming_storm_date is not None:
             note += (
-                f"\n\U0001f30a Onshore storm forecast {weather.upcoming_storm_date:%a %d %b}"
-                " — worth checking again a day or two after."
+                f"\n\U0001f52e Storm forecast {weather.upcoming_storm_date:%a %d %b}"
+                " — worth checking again a day or two after that."
             )
         else:
-            note += "\n\U0001f30a No onshore storm forecast in the next few days."
+            note += (
+                f"\n\U0001f52e No storm forecast through "
+                f"{weather.storm_lookahead_through:%a %d %b}."
+            )
         return note
 
     @staticmethod

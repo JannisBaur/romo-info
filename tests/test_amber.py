@@ -25,7 +25,12 @@ _NO_TIDE = TideForecast(extremes=())
 
 
 def _weather(
-    *, speed_kmh: float, recent_storm: bool, upcoming_storm: date | None = None
+    *,
+    speed_kmh: float,
+    recent_storm: bool,
+    lookback_days: int = 3,
+    upcoming_storm: date | None = None,
+    lookahead_through: date = date(2026, 8, 22),
 ) -> WeatherForecast:
     return WeatherForecast(
         day_parts=(),
@@ -34,7 +39,9 @@ def _weather(
         wind_speed_max_kmh=speed_kmh,
         wind_direction_deg=270.0,
         recent_onshore_storm=recent_storm,
+        recent_storm_lookback_days=lookback_days,
         upcoming_storm_date=upcoming_storm,
+        storm_lookahead_through=lookahead_through,
     )
 
 
@@ -57,11 +64,11 @@ def test_recent_storm_but_still_rough_today_says_wait() -> None:
 
 
 def test_no_recent_storm_explains_why_todays_wind_does_not_count() -> None:
-    weather = _weather(speed_kmh=37.0, recent_storm=False)
+    weather = _weather(speed_kmh=37.0, recent_storm=False, lookback_days=3)
 
     note = AmberAdvisor().suggest(weather, _DAYTIME_LOW_TIDE)
 
-    assert "No onshore storm in the past few days" in note
+    assert "No onshore storm in the past 3 days" in note
     assert "37" in note
 
 
@@ -98,12 +105,28 @@ def test_upcoming_storm_is_mentioned_as_a_heads_up() -> None:
     note = AmberAdvisor().suggest(weather, _DAYTIME_LOW_TIDE)
 
     assert "Wed 19 Aug" in note
-    assert "storm forecast" in note.lower()
+    assert "Storm forecast" in note
 
 
-def test_no_upcoming_storm_says_so_explicitly() -> None:
-    weather = _weather(speed_kmh=15.0, recent_storm=False, upcoming_storm=None)
+def test_no_upcoming_storm_names_the_date_checked_through() -> None:
+    weather = _weather(
+        speed_kmh=15.0,
+        recent_storm=False,
+        upcoming_storm=None,
+        lookahead_through=date(2026, 8, 22),
+    )
 
     note = AmberAdvisor().suggest(weather, _DAYTIME_LOW_TIDE)
 
-    assert "No onshore storm forecast" in note
+    assert "No storm forecast through Sat 22 Aug" in note
+
+
+def test_recent_and_upcoming_storm_lines_are_visibly_distinct() -> None:
+    weather = _weather(speed_kmh=15.0, recent_storm=False, lookback_days=3, upcoming_storm=None)
+
+    note = AmberAdvisor().suggest(weather, _DAYTIME_LOW_TIDE)
+
+    past_line, future_line = note.split("\n")
+    assert past_line != future_line
+    assert "past 3 days" in past_line
+    assert "through" in future_line
