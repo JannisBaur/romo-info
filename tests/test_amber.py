@@ -13,44 +13,44 @@ _LOW_TIDE = TideForecast(
 _NO_TIDE = TideForecast(extremes=())
 
 
-def _weather(*, speed_kmh: float, direction_deg: float) -> WeatherForecast:
+def _weather(*, speed_kmh: float, recent_storm: bool) -> WeatherForecast:
     return WeatherForecast(
         day_parts=(),
         temperature_min_c=14.0,
         temperature_max_c=18.0,
         wind_speed_max_kmh=speed_kmh,
-        wind_direction_deg=direction_deg,
+        wind_direction_deg=270.0,
+        recent_onshore_storm=recent_storm,
     )
 
 
-def test_strong_onshore_wind_is_good_conditions() -> None:
-    weather = _weather(speed_kmh=30.0, direction_deg=270.0)  # due west, onshore
+def test_recent_storm_and_calm_today_is_good_conditions() -> None:
+    weather = _weather(speed_kmh=15.0, recent_storm=True)
 
     note = AmberAdvisor().suggest(weather, _LOW_TIDE)
 
     assert "Good conditions" in note
-    assert "30" in note
     assert "10:42" in note
 
 
-def test_strong_offshore_wind_is_less_likely() -> None:
-    weather = _weather(speed_kmh=30.0, direction_deg=90.0)  # due east, offshore
+def test_recent_storm_but_still_rough_today_says_wait() -> None:
+    weather = _weather(speed_kmh=40.0, recent_storm=True)
 
     note = AmberAdvisor().suggest(weather, _LOW_TIDE)
 
-    assert "not onshore" in note
+    assert "wait for calmer seas" in note
 
 
-def test_calm_wind_is_unlikely() -> None:
-    weather = _weather(speed_kmh=10.0, direction_deg=270.0)
+def test_no_recent_storm_is_unlikely_regardless_of_todays_wind() -> None:
+    weather = _weather(speed_kmh=15.0, recent_storm=False)
 
     note = AmberAdvisor().suggest(weather, _LOW_TIDE)
 
-    assert "Calm conditions" in note
+    assert "No recent storm" in note
 
 
 def test_no_low_tide_omits_timing_note() -> None:
-    weather = _weather(speed_kmh=30.0, direction_deg=270.0)
+    weather = _weather(speed_kmh=15.0, recent_storm=True)
 
     note = AmberAdvisor().suggest(weather, _NO_TIDE)
 

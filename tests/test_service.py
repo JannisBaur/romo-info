@@ -14,6 +14,7 @@ _WEATHER = WeatherForecast(
     temperature_max_c=15.0,
     wind_speed_max_kmh=10.0,
     wind_direction_deg=270.0,
+    recent_onshore_storm=True,
 )
 
 

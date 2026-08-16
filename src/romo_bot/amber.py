@@ -2,36 +2,34 @@ from __future__ import annotations
 
 from romo_bot.models import TideDirection, TideForecast, WeatherForecast
 
-# Rømø's beach faces roughly west into the North Sea; wind from the SW
-# through W to NW blows onshore, churning amber loose from the seabed and
-# washing it up on the beach -- the well-known rule amber hunters already
-# use, not a guess.
-_ONSHORE_MIN_DEG = 202.5
-_ONSHORE_MAX_DEG = 337.5
-_STRONG_WIND_KMH = 25.0
+# Amber washes ashore on Denmark's North Sea coast in two phases: a storm
+# (classically from the SW) loosens it from the seabed, then it's carried
+# in during the calmer weather that follows -- not necessarily while the
+# storm is still blowing. Today shouldn't itself be too rough to
+# comfortably search.
+_CALM_ENOUGH_WIND_KMH = 25.0
 
 
 class AmberAdvisor:
     """Suggests whether conditions favour amber hunting on Rømø's beach.
 
-    Pure deterministic heuristic, no I/O and no external API: strong
-    onshore wind is what washes amber ashore, and it's easiest to spot on
-    the beach exposed around low tide.
+    Pure deterministic heuristic, no I/O and no external API. See
+    romo_bot.weather.had_recent_onshore_storm for the storm-detection side
+    of this (checked over the past few days, not just today).
     """
 
     def suggest(self, weather: WeatherForecast, tide: TideForecast) -> str:
-        is_onshore = _ONSHORE_MIN_DEG <= weather.wind_direction_deg <= _ONSHORE_MAX_DEG
-        is_strong = weather.wind_speed_max_kmh >= _STRONG_WIND_KMH
+        is_calm_enough_today = weather.wind_speed_max_kmh <= _CALM_ENOUGH_WIND_KMH
         low_tide_note = self._low_tide_note(tide)
 
-        if is_onshore and is_strong:
+        if weather.recent_onshore_storm and is_calm_enough_today:
+            return f"Good conditions — recent onshore storm, calmer today.{low_tide_note}"
+        if weather.recent_onshore_storm:
             return (
-                f"Good conditions — strong onshore wind "
-                f"({weather.wind_speed_max_kmh:.0f} km/h).{low_tide_note}"
+                f"Amber may be loose from a recent storm, but it's still rough — "
+                f"wait for calmer seas.{low_tide_note}"
             )
-        if is_strong:
-            return f"Windy but not onshore, less likely today.{low_tide_note}"
-        return f"Calm conditions, unlikely today.{low_tide_note}"
+        return f"No recent storm to loosen amber, less likely today.{low_tide_note}"
 
     @staticmethod
     def _low_tide_note(tide: TideForecast) -> str:

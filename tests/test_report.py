@@ -32,6 +32,7 @@ def _report() -> DailyReport:
             temperature_max_c=19.0,
             wind_speed_max_kmh=22.0,
             wind_direction_deg=270.0,
+            recent_onshore_storm=True,
         ),
         amber_note=(
             "Good conditions — strong onshore wind (22 km/h). Best around low tide (~09:00)."
@@ -90,6 +91,7 @@ def test_missing_weather_data_shows_fallback_message() -> None:
             temperature_max_c=0.0,
             wind_speed_max_kmh=0.0,
             wind_direction_deg=0.0,
+            recent_onshore_storm=False,
         ),
         amber_note=report.amber_note,
     )

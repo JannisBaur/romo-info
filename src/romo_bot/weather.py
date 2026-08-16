@@ -35,6 +35,33 @@ _DAY_PARTS: tuple[tuple[str, int, int], ...] = (
     ("Evening", 18, 22),
 )
 
+# Amber washes ashore on Denmark's North Sea coast in a two-phase pattern:
+# a storm (classically from the SW) loosens it from the seabed first, then
+# it's carried in during the calmer weather that follows. These thresholds
+# are a reasonable reading of that qualitative guidance, not precisely
+# sourced wind speeds -- there's no authoritative exact km/h figure.
+_STORM_WIND_KMH = 45.0
+_ONSHORE_MIN_DEG = 202.5  # SW
+_ONSHORE_MAX_DEG = 337.5  # NW -- Rømø's beach faces roughly west
+
+
+def had_recent_onshore_storm(
+    daily_wind_speeds_kmh: Sequence[float], daily_wind_directions_deg: Sequence[float]
+) -> bool:
+    """True if any of the given past days had a strong onshore blow.
+
+    Pass only *past* days (not today) -- this checks whether the seabed was
+    recently churned up, not today's conditions.
+    """
+    if len(daily_wind_speeds_kmh) != len(daily_wind_directions_deg):
+        raise ValueError(
+            "daily_wind_speeds_kmh and daily_wind_directions_deg must be the same length"
+        )
+    return any(
+        speed >= _STORM_WIND_KMH and _ONSHORE_MIN_DEG <= direction <= _ONSHORE_MAX_DEG
+        for speed, direction in zip(daily_wind_speeds_kmh, daily_wind_directions_deg, strict=True)
+    )
+
 
 def bucket_day_parts(
     timestamps: Sequence[datetime],

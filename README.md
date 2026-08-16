@@ -42,12 +42,19 @@ buckets Open-Meteo's hourly data into those windows) rather than one blended
 daily summary, since "sunny morning, rain later" is a lot more actionable
 than a single averaged line.
 
-**Amber-hunting outlook** is a small deterministic rule (`romo_bot/amber.py`):
-strong wind onshore (SW through W to NW, since Rømø's beach faces west)
-washes amber ashore, and it's easiest to spot on the beach exposed around
-low tide. No AI/LLM call involved — this is well-known amber-hunter
-knowledge expressed as a plain, tested, free rule, not a judgment call that
-needs an API key.
+**Amber-hunting outlook** is a small deterministic rule
+(`romo_bot/amber.py` + `romo_bot/weather.had_recent_onshore_storm`), based
+on how amber actually reaches Denmark's North Sea coast: a storm (onshore,
+classically from the SW) loosens it from the seabed first, then it washes
+ashore during the *calmer* weather that follows, easiest to spot on the
+beach exposed around low tide. So the bot checks the past 3 days for a
+strong onshore blow, not just today's wind — a same-day-only check would
+get this backwards. No AI/LLM call involved — this is domain knowledge
+expressed as a plain, tested, free rule, not a judgment call that needs an
+API key. (Verified against multiple Danish West Coast amber-hunting
+sources — this differs from the "onshore wind blows it ashore" folklore
+more commonly cited for Baltic Sea amber coasts, which don't apply to
+Rømø's North Sea side.)
 
 WhatsApp sending uses [neonize](https://github.com/krypton-byte/neonize), an
 unofficial client library — WhatsApp's terms don't sanction unofficial

@@ -4,7 +4,7 @@ from datetime import datetime
 
 import pytest
 
-from romo_bot.weather import bucket_day_parts
+from romo_bot.weather import bucket_day_parts, had_recent_onshore_storm
 
 
 def _hourly_range(start_hour: int, end_hour: int) -> list[datetime]:
@@ -57,3 +57,34 @@ def test_hours_outside_any_window_are_ignored() -> None:
 def test_mismatched_lengths_raise_value_error() -> None:
     with pytest.raises(ValueError, match="same length"):
         bucket_day_parts(_hourly_range(6, 12), [10.0], [0])
+
+
+def test_strong_onshore_day_counts_as_recent_storm() -> None:
+    # Three past days: calm, then a strong SW blow, then calm again.
+    speeds = [10.0, 50.0, 12.0]
+    directions = [90.0, 250.0, 90.0]
+
+    assert had_recent_onshore_storm(speeds, directions) is True
+
+
+def test_strong_but_offshore_day_does_not_count() -> None:
+    speeds = [10.0, 50.0, 12.0]
+    directions = [90.0, 90.0, 90.0]  # strong, but due east -- offshore
+
+    assert had_recent_onshore_storm(speeds, directions) is False
+
+
+def test_onshore_but_weak_day_does_not_count() -> None:
+    speeds = [10.0, 20.0, 12.0]
+    directions = [90.0, 250.0, 90.0]  # onshore direction, but not strong enough
+
+    assert had_recent_onshore_storm(speeds, directions) is False
+
+
+def test_no_days_means_no_storm() -> None:
+    assert had_recent_onshore_storm([], []) is False
+
+
+def test_recent_onshore_storm_mismatched_lengths_raise_value_error() -> None:
+    with pytest.raises(ValueError, match="same length"):
+        had_recent_onshore_storm([50.0, 10.0], [250.0])
