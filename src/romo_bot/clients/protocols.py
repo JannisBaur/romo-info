@@ -6,11 +6,15 @@ from romo_bot.models import TideForecast, WeatherForecast
 
 
 class TideDataSource(Protocol):
-    def fetch_tide_forecast(self) -> TideForecast: ...
+    def fetch_tide_forecast(self) -> tuple[TideForecast, TideForecast]:
+        """Returns (today, tomorrow)."""
+        ...
 
 
 class WeatherDataSource(Protocol):
-    def fetch_weather_forecast(self) -> WeatherForecast: ...
+    def fetch_weather_forecast(self) -> tuple[WeatherForecast, WeatherForecast]:
+        """Returns (today, tomorrow)."""
+        ...
 
 
 class MessageSender(Protocol):

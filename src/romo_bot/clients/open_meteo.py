@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from typing import Any
 
 import httpx
 
@@ -19,8 +20,9 @@ class OpenMeteoClientError(RuntimeError):
 
 
 class OpenMeteoWeatherClient:
-    """Fetches today's weather (by day part) from Open-Meteo's Forecast API,
-    plus the past few days' wind (for the amber-hunting storm check).
+    """Fetches today's and tomorrow's weather (by day part) from Open-Meteo's
+    Forecast API, plus the past few days' wind (for the amber-hunting storm
+    check).
     """
 
     def __init__(
@@ -36,7 +38,7 @@ class OpenMeteoWeatherClient:
         self._timezone = timezone
         self._client = client or httpx.Client(timeout=10.0)
 
-    def fetch_weather_forecast(self) -> WeatherForecast:
+    def fetch_weather_forecast(self) -> tuple[WeatherForecast, WeatherForecast]:
         response = self._client.get(
             FORECAST_API_URL,
             params={
@@ -48,7 +50,7 @@ class OpenMeteoWeatherClient:
                     "wind_speed_10m_max,wind_direction_10m_dominant"
                 ),
                 "timezone": self._timezone,
-                "forecast_days": 1,
+                "forecast_days": 2,
                 "past_days": _PAST_DAYS_FOR_STORM_CHECK,
             },
         )
@@ -58,41 +60,50 @@ class OpenMeteoWeatherClient:
             raise OpenMeteoClientError(f"Forecast API request failed: {exc}") from exc
 
         try:
-            payload = response.json()
-
-            # past_days extends the hourly series backward too, so filter
-            # down to just the most recent (today's) date before bucketing
-            # -- else e.g. yesterday's 09:00 and today's 09:00 would both
-            # land in "Morning".
-            hourly = payload["hourly"]
-            all_timestamps = [datetime.fromisoformat(t) for t in hourly["time"]]
-            all_temperatures = [float(t) for t in hourly["temperature_2m"]]
-            all_codes = [int(c) for c in hourly["weathercode"]]
-            today = max(t.date() for t in all_timestamps)
-            todays_hours = [i for i, t in enumerate(all_timestamps) if t.date() == today]
-            day_parts = bucket_day_parts(
-                [all_timestamps[i] for i in todays_hours],
-                [all_temperatures[i] for i in todays_hours],
-                [all_codes[i] for i in todays_hours],
-            )
-
-            daily = payload["daily"]
-            daily_dates = [date.fromisoformat(d) for d in daily["time"]]
-            today_index = daily_dates.index(max(daily_dates))
-            wind_speeds = [float(s) for s in daily["wind_speed_10m_max"]]
-            wind_directions = [float(d) for d in daily["wind_direction_10m_dominant"]]
-            past_wind_speeds = [s for i, s in enumerate(wind_speeds) if i != today_index]
-            past_wind_directions = [d for i, d in enumerate(wind_directions) if i != today_index]
-
-            return WeatherForecast(
-                day_parts=day_parts,
-                temperature_min_c=float(daily["temperature_2m_min"][today_index]),
-                temperature_max_c=float(daily["temperature_2m_max"][today_index]),
-                wind_speed_max_kmh=wind_speeds[today_index],
-                wind_direction_deg=wind_directions[today_index],
-                recent_onshore_storm=had_recent_onshore_storm(
-                    past_wind_speeds, past_wind_directions
-                ),
-            )
+            return self._parse_response(response.json())
         except (KeyError, TypeError, ValueError, IndexError) as exc:
             raise OpenMeteoClientError(f"Unexpected forecast API response shape: {exc}") from exc
+
+    @staticmethod
+    def _parse_response(payload: dict[str, Any]) -> tuple[WeatherForecast, WeatherForecast]:
+        hourly = payload["hourly"]
+        all_timestamps = [datetime.fromisoformat(t) for t in hourly["time"]]
+        all_temperatures = [float(t) for t in hourly["temperature_2m"]]
+        all_codes = [int(c) for c in hourly["weathercode"]]
+
+        daily = payload["daily"]
+        daily_dates = [date.fromisoformat(d) for d in daily["time"]]
+        wind_speeds = [float(s) for s in daily["wind_speed_10m_max"]]
+        wind_directions = [float(d) for d in daily["wind_direction_10m_dominant"]]
+        temperature_mins = [float(t) for t in daily["temperature_2m_min"]]
+        temperature_maxs = [float(t) for t in daily["temperature_2m_max"]]
+
+        # past_days puts earlier days first, forecast days last -- the two
+        # latest dates present are today and tomorrow.
+        sorted_dates = sorted(daily_dates)
+        today_date, tomorrow_date = sorted_dates[-2], sorted_dates[-1]
+
+        def forecast_for(target_date: date) -> WeatherForecast:
+            hour_indices = [i for i, t in enumerate(all_timestamps) if t.date() == target_date]
+            day_parts = bucket_day_parts(
+                [all_timestamps[i] for i in hour_indices],
+                [all_temperatures[i] for i in hour_indices],
+                [all_codes[i] for i in hour_indices],
+            )
+            day_index = daily_dates.index(target_date)
+            # "Past" here means before *this* day -- for tomorrow's storm
+            # check, today itself counts as part of the recent past.
+            past_indices = [i for i, d in enumerate(daily_dates) if d < target_date]
+            return WeatherForecast(
+                day_parts=day_parts,
+                temperature_min_c=temperature_mins[day_index],
+                temperature_max_c=temperature_maxs[day_index],
+                wind_speed_max_kmh=wind_speeds[day_index],
+                wind_direction_deg=wind_directions[day_index],
+                recent_onshore_storm=had_recent_onshore_storm(
+                    [wind_speeds[i] for i in past_indices],
+                    [wind_directions[i] for i in past_indices],
+                ),
+            )
+
+        return forecast_for(today_date), forecast_for(tomorrow_date)

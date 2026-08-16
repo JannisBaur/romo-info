@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from enum import Enum
 
 
@@ -40,8 +40,15 @@ class WeatherForecast:
 
 
 @dataclass(frozen=True, slots=True)
-class DailyReport:
-    report_date: datetime
+class DayForecast:
+    for_date: date
+    label: str
     tide: TideForecast
     weather: WeatherForecast
     amber_note: str
+
+
+@dataclass(frozen=True, slots=True)
+class DailyReport:
+    report_date: datetime
+    days: tuple[DayForecast, ...]

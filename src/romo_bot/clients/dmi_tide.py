@@ -78,7 +78,7 @@ class DmiTideTableClient:
         self._table_filename = table_filename
         self._timezone = ZoneInfo(timezone)
 
-    def fetch_tide_forecast(self) -> TideForecast:
+    def fetch_tide_forecast(self) -> tuple[TideForecast, TideForecast]:
         text = (
             importlib.resources.files("romo_bot")
             .joinpath("data", self._table_filename)
@@ -86,4 +86,5 @@ class DmiTideTableClient:
         )
         entries = parse_table(text, target_timezone=self._timezone)
         today = datetime.now(self._timezone).date()
-        return extremes_for_date(entries, today)
+        tomorrow = today + timedelta(days=1)
+        return extremes_for_date(entries, today), extremes_for_date(entries, tomorrow)

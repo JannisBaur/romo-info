@@ -7,18 +7,20 @@ from romo_bot.models import TideForecast, WeatherForecast
 
 @dataclass
 class FakeTideSource:
-    forecast: TideForecast
+    today: TideForecast
+    tomorrow: TideForecast
 
-    def fetch_tide_forecast(self) -> TideForecast:
-        return self.forecast
+    def fetch_tide_forecast(self) -> tuple[TideForecast, TideForecast]:
+        return self.today, self.tomorrow
 
 
 @dataclass
 class FakeWeatherSource:
-    forecast: WeatherForecast
+    today: WeatherForecast
+    tomorrow: WeatherForecast
 
-    def fetch_weather_forecast(self) -> WeatherForecast:
-        return self.forecast
+    def fetch_weather_forecast(self) -> tuple[WeatherForecast, WeatherForecast]:
+        return self.today, self.tomorrow
 
 
 @dataclass
