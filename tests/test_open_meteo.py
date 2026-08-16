@@ -50,7 +50,7 @@ _SUCCESS_PAYLOAD = {
         # since today counts as "past" relative to tomorrow. Then calm
         # again until a strong onshore blow forecast for the 19th, which
         # should surface as an upcoming-storm heads-up for both days.
-        "wind_speed_10m_max": [10.0, 12.0, 11.0, 50.0, 20.0, 15.0, 55.0, 14.0, 13.0, 12.0],
+        "wind_speed_10m_max": [10.0, 12.0, 11.0, 60.0, 20.0, 15.0, 65.0, 14.0, 13.0, 12.0],
         "wind_direction_10m_dominant": [
             90.0,
             90.0,
@@ -87,7 +87,7 @@ def test_fetch_weather_forecast_uses_correct_daily_values_per_day() -> None:
     today, tomorrow, _outlook = OpenMeteoWeatherClient._parse_response(_SUCCESS_PAYLOAD, _TODAY)
 
     assert today.temperature_max_c == 18.0
-    assert today.wind_speed_max_kmh == 50.0
+    assert today.wind_speed_max_kmh == 60.0
     assert tomorrow.temperature_max_c == 15.0
     assert tomorrow.wind_speed_max_kmh == 20.0
 

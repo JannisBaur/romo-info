@@ -6,8 +6,11 @@ from romo_bot.models import StormOutlook, TideDirection, TideExtreme, TideForeca
 # (classically from the SW) loosens it from the seabed, then it's carried
 # in during the calmer weather that follows -- not necessarily while the
 # storm is still blowing. Today shouldn't itself be too rough to
-# comfortably search.
-_CALM_ENOUGH_WIND_KMH = 25.0
+# comfortably search. 10 m/s (~36 km/h) as the "calm enough" cutoff is
+# corroborated by multiple independent Danish amber-hunting sources
+# (ravjagt.dk, ravvejr.dk, ravfund.dk) -- see _STORM_WIND_KMH in weather.py
+# for the matching "strong enough to stir the seabed" threshold.
+_CALM_ENOUGH_WIND_KMH = 36.0
 
 # Prefer suggesting a low tide that falls at a sensible hour to actually
 # go outside, rather than technically-correct-but-useless "best time: 3am".

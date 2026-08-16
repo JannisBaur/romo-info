@@ -37,10 +37,12 @@ _DAY_PARTS: tuple[tuple[str, int, int], ...] = (
 
 # Amber washes ashore on Denmark's North Sea coast in a two-phase pattern:
 # a storm (classically from the SW) loosens it from the seabed first, then
-# it's carried in during the calmer weather that follows. These thresholds
-# are a reasonable reading of that qualitative guidance, not precisely
-# sourced wind speeds -- there's no authoritative exact km/h figure.
-_STORM_WIND_KMH = 45.0
+# it's carried in during the calmer weather that follows. 16 m/s (~58 km/h)
+# as the "strong enough to stir the seabed" threshold is corroborated by
+# multiple independent Danish amber-hunting sources (ravjagt.dk, ravvejr.dk,
+# ravfund.dk), not just one -- see _CALM_ENOUGH_WIND_KMH in amber.py for the
+# matching "calm enough afterward" threshold from the same sources.
+_STORM_WIND_KMH = 58.0
 _ONSHORE_MIN_DEG = 202.5  # SW
 _ONSHORE_MAX_DEG = 337.5  # NW -- Rømø's beach faces roughly west
 

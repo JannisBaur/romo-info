@@ -61,14 +61,14 @@ def test_mismatched_lengths_raise_value_error() -> None:
 
 def test_strong_onshore_day_counts_as_recent_storm() -> None:
     # Three past days: calm, then a strong SW blow, then calm again.
-    speeds = [10.0, 50.0, 12.0]
+    speeds = [10.0, 60.0, 12.0]
     directions = [90.0, 250.0, 90.0]
 
     assert had_recent_onshore_storm(speeds, directions) is True
 
 
 def test_strong_but_offshore_day_does_not_count() -> None:
-    speeds = [10.0, 50.0, 12.0]
+    speeds = [10.0, 60.0, 12.0]
     directions = [90.0, 90.0, 90.0]  # strong, but due east -- offshore
 
     assert had_recent_onshore_storm(speeds, directions) is False
@@ -92,7 +92,7 @@ def test_recent_onshore_storm_mismatched_lengths_raise_value_error() -> None:
 
 def test_next_onshore_storm_finds_earliest_qualifying_date() -> None:
     dates = [date(2026, 8, 18), date(2026, 8, 19), date(2026, 8, 20)]
-    speeds = [10.0, 50.0, 55.0]  # both the 19th and 20th qualify
+    speeds = [10.0, 60.0, 65.0]  # both the 19th and 20th qualify
     directions = [90.0, 250.0, 260.0]
 
     assert next_onshore_storm(dates, speeds, directions) == date(2026, 8, 19)
