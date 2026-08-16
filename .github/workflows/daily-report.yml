@@ -6,10 +6,25 @@ on:
     - cron: "0 5 * * *"
   workflow_dispatch: {}
 
+# Deploying to Pages needs these on the default GITHUB_TOKEN -- no
+# personal token or stored secret is involved anywhere in this workflow.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let a scheduled run and a manual run deploy over each other.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
-  send-report:
+  build-and-deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -23,16 +38,14 @@ jobs:
       - name: Install dependencies
         run: poetry install --no-interaction --only main
 
-      - name: Decrypt WhatsApp session
-        env:
-          SESSION_PASSPHRASE: ${{ secrets.WHATSAPP_SESSION_PASSPHRASE }}
-        run: |
-          openssl enc -d -aes-256-cbc -pbkdf2 \
-            -in data/session.db.enc -out data/session.db \
-            -pass env:SESSION_PASSPHRASE
-
-      - name: Send report
-        env:
-          WHATSAPP_GROUP_JID: ${{ secrets.WHATSAPP_GROUP_JID }}
-          SESSION_DB_PATH: data/session.db
+      - name: Build report page
         run: poetry run python -m romo_bot
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

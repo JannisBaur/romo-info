@@ -33,14 +33,14 @@ class FakeWeatherSource:
 
 
 @dataclass
-class FakeMessageSender:
-    sent: list[tuple[str, str]] = field(default_factory=list)
+class FakeReportPublisher:
+    published: list[str] = field(default_factory=list)
 
-    def send(self, group_jid: str, text: str) -> None:
-        self.sent.append((group_jid, text))
+    def publish(self, html: str) -> None:
+        self.published.append(html)
 
 
 @dataclass
-class FailingMessageSender:
-    def send(self, group_jid: str, text: str) -> None:
+class FailingReportPublisher:
+    def publish(self, html: str) -> None:
         raise RuntimeError("boom")

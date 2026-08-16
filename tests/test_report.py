@@ -67,44 +67,76 @@ def _report() -> DailyReport:
     )
 
 
+def test_output_is_a_complete_html_document() -> None:
+    html = ReportFormatter().format(_report())
+    assert html.startswith("<!doctype html>")
+    assert '<meta name="viewport"' in html
+    assert html.rstrip().endswith("</html>")
+
+
 def test_tide_extremes_appear_in_chronological_order() -> None:
-    text = ReportFormatter().format(_report())
-    assert text.index("High tide") < text.index("Low tide")
-    assert "03:00" in text
-    assert "09:00" in text
+    html = ReportFormatter().format(_report())
+    assert html.index("High tide") < html.index("Low tide")
+    assert "03:00" in html
+    assert "09:00" in html
 
 
 def test_both_days_are_included_in_order() -> None:
-    text = ReportFormatter().format(_report())
-    assert text.index("Today") < text.index("Tomorrow")
+    html = ReportFormatter().format(_report())
+    assert html.index("Today") < html.index("Tomorrow")
 
 
 def test_weather_day_parts_are_included_in_order() -> None:
-    text = ReportFormatter().format(_report())
-    assert text.index("Morning") < text.index("Afternoon") < text.index("Evening")
-    assert "Partly cloudy" in text
-    assert "Clear sky" in text
-    assert "Overcast" in text
-    assert "14" in text
-    assert "19" in text
+    html = ReportFormatter().format(_report())
+    assert html.index("Morning") < html.index("Afternoon") < html.index("Evening")
+    assert "Partly cloudy" in html
+    assert "Clear sky" in html
+    assert "Overcast" in html
+    assert "14" in html
+    assert "19" in html
 
 
 def test_wind_speed_is_included() -> None:
-    text = ReportFormatter().format(_report())
-    assert "22" in text
+    html = ReportFormatter().format(_report())
+    assert "22" in html
 
 
 def test_amber_notes_for_both_days_are_included() -> None:
-    text = ReportFormatter().format(_report())
-    assert "Amber hunting" in text
-    assert "strong onshore wind" in text
-    assert "No recent storm" in text
+    html = ReportFormatter().format(_report())
+    assert "Amber hunting" in html
+    assert "strong onshore wind" in html
+    assert "No recent storm" in html
 
 
 def test_storm_outlook_appears_once_not_per_day() -> None:
-    text = ReportFormatter().format(_report())
-    assert text.count("No storm forecast through Sat 22 Aug") == 1
-    assert "Amber storm outlook" in text
+    html = ReportFormatter().format(_report())
+    assert html.count("No storm forecast through Sat 22 Aug") == 1
+    assert "Amber storm outlook" in html
+
+
+def test_text_from_the_report_is_html_escaped() -> None:
+    # Nothing in the pipeline produces markup today, but the formatter must
+    # not become an injection point if a data source ever returns "<" or "&".
+    report = _report()
+    today = report.days[0]
+    html = ReportFormatter().format(
+        DailyReport(
+            report_date=report.report_date,
+            days=(
+                DayForecast(
+                    for_date=today.for_date,
+                    label=today.label,
+                    tide=today.tide,
+                    weather=today.weather,
+                    amber_note="<script>alert('x')</script> & more",
+                ),
+            ),
+            storm_outlook_note=report.storm_outlook_note,
+        )
+    )
+    assert "<script>" not in html
+    assert "&lt;script&gt;" in html
+    assert "&amp; more" in html
 
 
 def test_missing_tide_data_shows_fallback_message() -> None:
@@ -117,14 +149,14 @@ def test_missing_tide_data_shows_fallback_message() -> None:
         weather=today.weather,
         amber_note=today.amber_note,
     )
-    text = ReportFormatter().format(
+    html = ReportFormatter().format(
         DailyReport(
             report_date=report.report_date,
             days=(empty_tide_today, report.days[1]),
             storm_outlook_note=report.storm_outlook_note,
         )
     )
-    assert "unavailable" in text.lower()
+    assert "unavailable" in html.lower()
 
 
 def test_missing_weather_data_shows_fallback_message() -> None:
@@ -146,11 +178,11 @@ def test_missing_weather_data_shows_fallback_message() -> None:
         ),
         amber_note=today.amber_note,
     )
-    text = ReportFormatter().format(
+    html = ReportFormatter().format(
         DailyReport(
             report_date=report.report_date,
             days=(empty_weather_today, report.days[1]),
             storm_outlook_note=report.storm_outlook_note,
         )
     )
-    assert "unavailable" in text.lower()
+    assert "unavailable" in html.lower()

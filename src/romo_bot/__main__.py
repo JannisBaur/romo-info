@@ -5,8 +5,8 @@ import sys
 
 from romo_bot.amber import AmberAdvisor
 from romo_bot.clients.dmi_tide import DmiTideTableClient
+from romo_bot.clients.file_publisher import FileReportPublisher
 from romo_bot.clients.open_meteo import OpenMeteoWeatherClient
-from romo_bot.clients.whatsapp import NeonizeMessageSender
 from romo_bot.config import ConfigError, Settings
 from romo_bot.report import ReportFormatter
 from romo_bot.service import DailyReportService
@@ -26,10 +26,9 @@ def main() -> int:
         weather_source=OpenMeteoWeatherClient(
             settings.latitude, settings.longitude, settings.timezone
         ),
-        sender=NeonizeMessageSender(settings.session_db_path),
+        publisher=FileReportPublisher(settings.output_path),
         formatter=ReportFormatter(),
         amber_advisor=AmberAdvisor(),
-        group_jid=settings.whatsapp_group_jid,
         timezone=settings.timezone,
         days_to_report=settings.days_to_report,
     )
@@ -37,7 +36,7 @@ def main() -> int:
     try:
         service.run()
     except Exception:
-        logging.exception("Failed to send daily report")
+        logging.exception("Failed to build daily report")
         return 1
     return 0
 

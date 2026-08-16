@@ -6,7 +6,7 @@ from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from romo_bot.amber import AmberAdvisor
-from romo_bot.clients.protocols import MessageSender, TideDataSource, WeatherDataSource
+from romo_bot.clients.protocols import ReportPublisher, TideDataSource, WeatherDataSource
 from romo_bot.models import DailyReport, DayForecast
 from romo_bot.report import ReportFormatter
 
@@ -26,19 +26,18 @@ def _label_for(offset: int, for_date: date) -> str:
 
 @dataclass(frozen=True, slots=True)
 class DailyReportService:
-    """Orchestrates fetching data, formatting it, and delivering the report.
+    """Orchestrates fetching data, formatting it, and publishing the report.
 
     Depends only on narrow protocols (dependency inversion), so each piece
-    -- data source, sender -- can be swapped or faked independently in tests
-    without touching this class.
+    -- data source, publisher -- can be swapped or faked independently in
+    tests without touching this class.
     """
 
     tide_source: TideDataSource
     weather_source: WeatherDataSource
-    sender: MessageSender
+    publisher: ReportPublisher
     formatter: ReportFormatter
     amber_advisor: AmberAdvisor
-    group_jid: str
     timezone: str
     days_to_report: int
 
@@ -63,7 +62,6 @@ class DailyReportService:
             days=days,
             storm_outlook_note=self.amber_advisor.describe_outlook(storm_outlook),
         )
-        message = self.formatter.format(report)
-        logger.info("Sending daily report to %s", self.group_jid)
-        self.sender.send(self.group_jid, message)
-        logger.info("Report sent.")
+        html = self.formatter.format(report)
+        self.publisher.publish(html)
+        logger.info("Report published.")

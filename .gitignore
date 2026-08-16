@@ -1,10 +1,7 @@
 __pycache__/
 *.pyc
 .venv/
-data/*
-!data/session.db.enc
-*.db
-session.b64
+public/
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/

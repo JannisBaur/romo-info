@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "romo-bot"
 version = "0.1.0"
-description = "Sends a daily WhatsApp message with Rømø tide times and weather to a group chat."
+description = "Publishes a daily Rømø tide, weather, and amber-hunting page to GitHub Pages."
 authors = ["Jannis Baur"]
 license = "MIT"
 readme = "README.md"
@@ -10,7 +10,6 @@ packages = [{ include = "romo_bot", from = "src" }]
 [tool.poetry.dependencies]
 python = "^3.12"
 httpx = "^0.28"
-neonize = "^0.4"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3"
@@ -29,7 +28,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["src", "tests", "scripts"]
+src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "S", "SIM", "C4", "RUF", "N", "PTH"]
@@ -46,13 +45,7 @@ quote-style = "double"
 [tool.mypy]
 python_version = "3.12"
 strict = true
-files = ["src", "tests", "scripts"]
-
-[[tool.mypy.overrides]]
-# neonize ships no type stubs (it's a ctypes binding over a Go shared library);
-# every call into it is isolated behind romo_bot.clients.whatsapp.
-module = "neonize.*"
-ignore_missing_imports = true
+files = ["src", "tests"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

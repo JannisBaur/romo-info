@@ -4,25 +4,24 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-DEFAULT_SESSION_DB_PATH = Path("data/session.db")
+DEFAULT_OUTPUT_PATH = Path("public/index.html")
 DEFAULT_LATITUDE = 55.13
 DEFAULT_LONGITUDE = 8.45
 DEFAULT_TIMEZONE = "Europe/Copenhagen"
 # How many days to fully report (tide, weather, amber note) each run,
-# starting today. Kept small by default to keep the message short --
+# starting today. Kept small by default to keep the page short --
 # override with DAYS_TO_REPORT for a longer look (e.g. 2 for today +
-# tomorrow, as earlier versions of this bot always did).
+# tomorrow).
 DEFAULT_DAYS_TO_REPORT = 1
 
 
 class ConfigError(RuntimeError):
-    """Raised when required configuration is missing or invalid."""
+    """Raised when configuration is invalid."""
 
 
 @dataclass(frozen=True, slots=True)
 class Settings:
-    whatsapp_group_jid: str
-    session_db_path: Path
+    output_path: Path
     latitude: float
     longitude: float
     timezone: str
@@ -36,8 +35,7 @@ class Settings:
             if days_to_report < 1:
                 raise ConfigError(f"DAYS_TO_REPORT must be at least 1, got {days_to_report}")
             return cls(
-                whatsapp_group_jid=_require(source, "WHATSAPP_GROUP_JID"),
-                session_db_path=Path(source.get("SESSION_DB_PATH", str(DEFAULT_SESSION_DB_PATH))),
+                output_path=Path(source.get("OUTPUT_PATH", str(DEFAULT_OUTPUT_PATH))),
                 latitude=float(source.get("LATITUDE", str(DEFAULT_LATITUDE))),
                 longitude=float(source.get("LONGITUDE", str(DEFAULT_LONGITUDE))),
                 timezone=source.get("REPORT_TIMEZONE", DEFAULT_TIMEZONE),
@@ -45,10 +43,3 @@ class Settings:
             )
         except ValueError as exc:
             raise ConfigError(f"Invalid configuration value: {exc}") from exc
-
-
-def _require(source: dict[str, str], key: str) -> str:
-    value = source.get(key)
-    if not value:
-        raise ConfigError(f"Missing required environment variable: {key}")
-    return value

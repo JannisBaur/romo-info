@@ -8,7 +8,12 @@ from romo_bot.amber import AmberAdvisor
 from romo_bot.models import DayPartForecast, StormOutlook, TideForecast, WeatherForecast
 from romo_bot.report import ReportFormatter
 from romo_bot.service import DailyReportService, _label_for
-from tests.fakes import FailingMessageSender, FakeMessageSender, FakeTideSource, FakeWeatherSource
+from tests.fakes import (
+    FailingReportPublisher,
+    FakeReportPublisher,
+    FakeTideSource,
+    FakeWeatherSource,
+)
 
 _TODAY_WEATHER = WeatherForecast(
     day_parts=(DayPartForecast(label="Morning", summary="Sunny", temperature_c=12.0),),
@@ -39,71 +44,75 @@ _OUTLOOK = StormOutlook(
 
 
 def _service(
-    sender: FakeMessageSender | FailingMessageSender, *, days_to_report: int = 2
+    publisher: FakeReportPublisher | FailingReportPublisher, *, days_to_report: int = 2
 ) -> DailyReportService:
     return DailyReportService(
         tide_source=FakeTideSource(TideForecast(extremes=()), TideForecast(extremes=())),
         weather_source=FakeWeatherSource(_TODAY_WEATHER, _TOMORROW_WEATHER, _OUTLOOK),
-        sender=sender,
+        publisher=publisher,
         formatter=ReportFormatter(),
         amber_advisor=AmberAdvisor(),
-        group_jid="123@g.us",
         timezone="UTC",
         days_to_report=days_to_report,
     )
 
 
-def test_run_sends_formatted_report_to_configured_group() -> None:
-    sender = FakeMessageSender()
-    _service(sender).run()
+def test_run_publishes_the_formatted_report() -> None:
+    publisher = FakeReportPublisher()
+    _service(publisher).run()
 
-    assert len(sender.sent) == 1
-    jid, text = sender.sent[0]
-    assert jid == "123@g.us"
-    assert "Sunny" in text
+    assert len(publisher.published) == 1
+    assert "Sunny" in publisher.published[0]
+
+
+def test_run_publishes_an_html_document() -> None:
+    publisher = FakeReportPublisher()
+    _service(publisher).run()
+
+    html = publisher.published[0]
+    assert html.startswith("<!doctype html>")
+    assert "</html>" in html
 
 
 def test_run_includes_both_days() -> None:
-    sender = FakeMessageSender()
-    _service(sender).run()
+    publisher = FakeReportPublisher()
+    _service(publisher).run()
 
-    _, text = sender.sent[0]
-    assert "Today" in text
-    assert "Tomorrow" in text
-    assert "Sunny" in text
-    assert "Cloudy" in text
+    html = publisher.published[0]
+    assert "Today" in html
+    assert "Tomorrow" in html
+    assert "Sunny" in html
+    assert "Cloudy" in html
 
 
 def test_run_with_days_to_report_one_omits_tomorrow() -> None:
-    sender = FakeMessageSender()
-    _service(sender, days_to_report=1).run()
+    publisher = FakeReportPublisher()
+    _service(publisher, days_to_report=1).run()
 
-    _, text = sender.sent[0]
-    assert "Today" in text
-    assert "Tomorrow" not in text
-    assert "Sunny" in text
-    assert "Cloudy" not in text
+    html = publisher.published[0]
+    assert "Today" in html
+    assert "Tomorrow" not in html
+    assert "Sunny" in html
+    assert "Cloudy" not in html
 
 
 def test_run_includes_amber_note_from_advisor() -> None:
-    sender = FakeMessageSender()
-    _service(sender).run()
+    publisher = FakeReportPublisher()
+    _service(publisher).run()
 
-    _, text = sender.sent[0]
-    assert "Amber hunting" in text
+    assert "Amber hunting" in publisher.published[0]
 
 
 def test_run_includes_storm_outlook_once() -> None:
-    sender = FakeMessageSender()
-    _service(sender).run()
+    publisher = FakeReportPublisher()
+    _service(publisher).run()
 
-    _, text = sender.sent[0]
-    assert text.count("Wed 19 Aug") == 1
+    assert publisher.published[0].count("Wed 19 Aug") == 1
 
 
-def test_run_propagates_sender_failures() -> None:
+def test_run_propagates_publisher_failures() -> None:
     with pytest.raises(RuntimeError, match="boom"):
-        _service(FailingMessageSender()).run()
+        _service(FailingReportPublisher()).run()
 
 
 def test_label_for_offset_zero_is_today() -> None:

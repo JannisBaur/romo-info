@@ -12,7 +12,7 @@ def find_tide_extremes(
     """Locate local high/low points in an hourly sea-level series.
 
     Pure function: given the same inputs it always returns the same output,
-    so it is tested directly without a network or a paired WhatsApp session.
+    so it is tested directly with fixed data, no network required.
     """
     if len(timestamps) != len(heights_m):
         raise ValueError("timestamps and heights_m must be the same length")
