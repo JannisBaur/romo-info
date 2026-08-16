@@ -32,6 +32,7 @@ from typing import TYPE_CHECKING
 from neonize.client import ClientFactory
 from neonize.events import ConnectedEv
 from neonize.exc import PairPhoneError
+from neonize.utils.enum import ClientType
 
 from romo_bot.config import DEFAULT_SESSION_DB_PATH
 
@@ -61,7 +62,16 @@ def _request_pairing_code(client: NewClient, phone: str) -> str | BaseException:
         # neonize ships no stubs, so both PairPhone()'s return value and the
         # caught exception type are Any to mypy -- see the module override
         # in pyproject.toml.
-        return client.PairPhone(phone, show_push_notification=True)  # type: ignore[no-any-return]
+        #
+        # client_type explicitly set to CHROME: the library's own default
+        # (FIREFOX) has been reported to get "device could not be added"
+        # rejections from WhatsApp's phone-number-code flow specifically
+        # (QR pairing doesn't seem to care). show_push_notification=False
+        # to keep this to the single code-entry flow, no secondary
+        # confirmation channel.
+        return client.PairPhone(  # type: ignore[no-any-return]
+            phone, show_push_notification=False, client_type=ClientType.CHROME
+        )
     except PairPhoneError as exc:
         return exc  # type: ignore[no-any-return]
 
