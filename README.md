@@ -95,24 +95,42 @@ into WhatsApp, which works on a single device.
 
    Copy the `<id>@g.us` value for your target group.
 
-5. Package the session:
+5. Encrypt the session file and commit the ciphertext. **The session file
+   itself is too large for a GitHub secret** (secrets cap out well under
+   1MB; `session.db` is a couple of MB) — so instead, encrypt it with a
+   random passphrase, commit the *encrypted* file (safe to store in the
+   private repo), and keep only the short passphrase as a secret:
 
    ```bash
-   base64 -w0 data/session.db > session.b64
-   cat session.b64
+   PASSPHRASE=$(openssl rand -base64 32)
+   openssl enc -aes-256-cbc -pbkdf2 -salt \
+     -in data/session.db -out data/session.db.enc \
+     -pass env:PASSPHRASE
+   echo "$PASSPHRASE"
    ```
 
-   Copy the printed text (long single line).
+   Copy the printed passphrase (short — one line, easy to copy reliably).
 
-6. Still on your phone, go to the repo's **Settings → Secrets and variables →
-   Actions** in the browser (works fine on mobile) and add:
-   - `WHATSAPP_SESSION_DB_B64` — the text you copied in step 5
-   - `WHATSAPP_GROUP_JID` — the JID from step 4
+6. Set two secrets from the Codespace terminal using the GitHub CLI (already
+   logged in there):
 
-   Back in the Codespace terminal, run `rm session.b64` — it's the same
-   sensitive material as `data/session.db`. You can also delete the
-   Codespace afterwards (Codespaces list → `...` → Delete) since its only
-   job was this one-time pairing step.
+   ```bash
+   gh secret set WHATSAPP_SESSION_PASSPHRASE -b"$PASSPHRASE"
+   gh secret set WHATSAPP_GROUP_JID -b"<paste the JID from step 4>"
+   ```
+
+   Then commit and push the encrypted file (this is ciphertext — safe to
+   store in the repo, unreadable without the passphrase secret):
+
+   ```bash
+   git add data/session.db.enc
+   git commit -m "Add encrypted WhatsApp session"
+   git push
+   rm data/session.db
+   ```
+
+   You can delete the Codespace afterwards (Codespaces list → `...` →
+   Delete) since its only job was this one-time pairing step.
 
 7. In the repo's **Actions** tab, open **Daily Rømø report** → **Run
    workflow** to trigger it by hand and confirm the message actually arrives
@@ -144,7 +162,8 @@ Everything else (steps 4–7 above) is identical.
 If the scheduled job starts failing with "No paired WhatsApp session found"
 or a connection error, the linked device was likely invalidated by WhatsApp
 (this can happen after long inactivity). Repeat the one-time setup above
-(either variant) to re-pair and refresh the `WHATSAPP_SESSION_DB_B64` secret.
+(either variant) to re-pair, then re-run step 5–6 to replace
+`data/session.db.enc` and the `WHATSAPP_SESSION_PASSPHRASE` secret.
 
 ## Development
 

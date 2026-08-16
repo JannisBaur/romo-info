@@ -23,10 +23,13 @@ jobs:
       - name: Install dependencies
         run: poetry install --no-interaction --only main
 
-      - name: Restore WhatsApp session
+      - name: Decrypt WhatsApp session
+        env:
+          SESSION_PASSPHRASE: ${{ secrets.WHATSAPP_SESSION_PASSPHRASE }}
         run: |
-          mkdir -p data
-          echo "${{ secrets.WHATSAPP_SESSION_DB_B64 }}" | base64 -d > data/session.db
+          openssl enc -d -aes-256-cbc -pbkdf2 \
+            -in data/session.db.enc -out data/session.db \
+            -pass env:SESSION_PASSPHRASE
 
       - name: Send report
         env:

@@ -5,8 +5,8 @@ printed in the terminal using WhatsApp on your phone
 (Settings -> Linked Devices -> Link a Device).
 
 Session credentials are saved to the sqlite file at SESSION_DB_PATH (default:
-data/session.db) -- treat that file like a password. Never commit it; it is
-what later gets base64-encoded into the WHATSAPP_SESSION_DB_B64 GitHub secret.
+data/session.db) -- treat that file like a password. Never commit it as-is;
+see README.md for encrypting it before committing data/session.db.enc.
 """
 
 from __future__ import annotations
