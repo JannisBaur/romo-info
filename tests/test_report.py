@@ -26,6 +26,10 @@ def _report() -> DailyReport:
             temperature_min_c=14.0,
             temperature_max_c=19.0,
             wind_speed_max_kmh=22.0,
+            wind_direction_deg=270.0,
+        ),
+        amber_note=(
+            "Good conditions — strong onshore wind (22 km/h). Best around low tide (~09:00)."
         ),
     )
 
@@ -45,12 +49,19 @@ def test_weather_summary_is_included() -> None:
     assert "22" in text
 
 
+def test_amber_note_is_included() -> None:
+    text = ReportFormatter().format(_report())
+    assert "Amber hunting" in text
+    assert "strong onshore wind" in text
+
+
 def test_missing_tide_data_shows_fallback_message() -> None:
     report = _report()
     empty_tide = DailyReport(
         report_date=report.report_date,
         tide=TideForecast(extremes=()),
         weather=report.weather,
+        amber_note=report.amber_note,
     )
     text = ReportFormatter().format(empty_tide)
     assert "unavailable" in text.lower()

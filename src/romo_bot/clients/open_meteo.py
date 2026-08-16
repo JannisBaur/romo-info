@@ -1,13 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime
-
 import httpx
 
-from romo_bot.models import TideForecast, WeatherForecast
-from romo_bot.tide import find_tide_extremes
+from romo_bot.models import WeatherForecast
 
-MARINE_API_URL = "https://marine-api.open-meteo.com/v1/marine"
 FORECAST_API_URL = "https://api.open-meteo.com/v1/forecast"
 
 # Open-Meteo's weathercode -> short human summary (WMO code table, common subset).
@@ -38,54 +34,6 @@ class OpenMeteoClientError(RuntimeError):
     """Raised when an Open-Meteo request fails or returns unexpected data."""
 
 
-class OpenMeteoTideClient:
-    """Derives today's tide extremes from Open-Meteo's Marine API.
-
-    Note: the underlying model is ~8km resolution, which cannot fully
-    resolve the Wadden Sea's tidal flats around Rømø. Treat the times/heights
-    as a helpful estimate, not a substitute for an official tide table when
-    it matters (e.g. mudflat walking safety).
-    """
-
-    def __init__(
-        self,
-        latitude: float,
-        longitude: float,
-        timezone: str,
-        *,
-        client: httpx.Client | None = None,
-    ) -> None:
-        self._latitude = latitude
-        self._longitude = longitude
-        self._timezone = timezone
-        self._client = client or httpx.Client(timeout=10.0)
-
-    def fetch_tide_forecast(self) -> TideForecast:
-        response = self._client.get(
-            MARINE_API_URL,
-            params={
-                "latitude": self._latitude,
-                "longitude": self._longitude,
-                "hourly": "sea_level_height_msl",
-                "timezone": self._timezone,
-                "forecast_days": 1,
-            },
-        )
-        try:
-            response.raise_for_status()
-        except httpx.HTTPStatusError as exc:
-            raise OpenMeteoClientError(f"Marine API request failed: {exc}") from exc
-
-        try:
-            hourly = response.json()["hourly"]
-            timestamps = [datetime.fromisoformat(t) for t in hourly["time"]]
-            heights = [float(h) for h in hourly["sea_level_height_msl"]]
-        except (KeyError, TypeError, ValueError) as exc:
-            raise OpenMeteoClientError(f"Unexpected marine API response shape: {exc}") from exc
-
-        return TideForecast(extremes=find_tide_extremes(timestamps, heights))
-
-
 class OpenMeteoWeatherClient:
     """Fetches today's weather summary from Open-Meteo's Forecast API."""
 
@@ -108,7 +56,10 @@ class OpenMeteoWeatherClient:
             params={
                 "latitude": self._latitude,
                 "longitude": self._longitude,
-                "daily": "weathercode,temperature_2m_max,temperature_2m_min,wind_speed_10m_max",
+                "daily": (
+                    "weathercode,temperature_2m_max,temperature_2m_min,"
+                    "wind_speed_10m_max,wind_direction_10m_dominant"
+                ),
                 "timezone": self._timezone,
                 "forecast_days": 1,
             },
@@ -126,6 +77,7 @@ class OpenMeteoWeatherClient:
                 temperature_min_c=float(daily["temperature_2m_min"][0]),
                 temperature_max_c=float(daily["temperature_2m_max"][0]),
                 wind_speed_max_kmh=float(daily["wind_speed_10m_max"][0]),
+                wind_direction_deg=float(daily["wind_direction_10m_dominant"][0]),
             )
         except (KeyError, TypeError, ValueError, IndexError) as exc:
             raise OpenMeteoClientError(f"Unexpected forecast API response shape: {exc}") from exc

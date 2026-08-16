@@ -1,8 +1,9 @@
 # romo-bot
 
-Sends a daily WhatsApp message with tide times and weather for Rømø, Denmark
-to a group chat. Runs once a day as a scheduled GitHub Actions job — there is
-no server to host, and no MCP server involved.
+Sends a daily WhatsApp message with tide times, weather, and an amber-hunting
+outlook for Rømø, Denmark to a group chat. Runs once a day as a scheduled
+GitHub Actions job — there is no server to host, and no MCP/LLM agent
+involved.
 
 ## How it works
 
@@ -12,8 +13,9 @@ GitHub Actions (cron, once/day)
         ▼
 romo_bot.__main__:main
         │
-        ├── OpenMeteoTideClient    ──► marine-api.open-meteo.com  (tide extremes)
-        ├── OpenMeteoWeatherClient ──► api.open-meteo.com          (weather)
+        ├── DmiTideTableClient     ──  bundled DMI Havneby tide table (no network)
+        ├── OpenMeteoWeatherClient ──► api.open-meteo.com               (weather)
+        ├── AmberAdvisor           ──  rule-based amber-hunting outlook
         ├── ReportFormatter        ──  formats the message text
         └── NeonizeMessageSender   ──► WhatsApp (via a paired session)
 ```
@@ -21,16 +23,29 @@ romo_bot.__main__:main
 Every dependency above is a narrow `Protocol` (`TideDataSource`,
 `WeatherDataSource`, `MessageSender` in `src/romo_bot/clients/protocols.py`).
 `DailyReportService` only knows about those protocols, not the concrete
-clients — so the WhatsApp/Open-Meteo specifics are swappable and the
-orchestration logic is tested with fakes, no network or WhatsApp session
-required (see `tests/`).
+clients — so they're swappable and the orchestration logic is tested with
+fakes, no network or WhatsApp session required (see `tests/`).
 
-Tide/weather fetching and message sending are unofficial/best-effort:
-Open-Meteo's marine model is ~8km resolution and can't fully resolve the
-Wadden Sea's tidal flats around Rømø — treat the tide times as an estimate,
-not a substitute for an official tide table when it actually matters (e.g.
-mudflat walking safety). WhatsApp sending uses [neonize](https://github.com/krypton-byte/neonize),
-an unofficial client library — WhatsApp's terms don't sanction unofficial
+**Tide data** comes from a DMI (Danish Meteorological Institute) harmonic
+tide table for the Havneby station, bundled directly in the repo
+(`src/romo_bot/data/havneby_tides_2026.txt`) rather than fetched live. This
+is deliberate: DMI's live ocean-model API turned out to be unreliable from
+shared cloud IPs (Codespaces/GitHub Actions), and a generic global marine
+model (tried first, since removed) was off by up to ~2 hours for this
+stretch of Wadden Sea coastline. The bundled table is the real
+station-calibrated prediction, matches official sources closely, and has
+zero runtime network dependency for tides — but it **only covers one
+calendar year**; see "Refreshing the tide table" below.
+
+**Amber-hunting outlook** is a small deterministic rule (`romo_bot/amber.py`):
+strong wind onshore (SW through W to NW, since Rømø's beach faces west)
+washes amber ashore, and it's easiest to spot on the beach exposed around
+low tide. No AI/LLM call involved — this is well-known amber-hunter
+knowledge expressed as a plain, tested, free rule, not a judgment call that
+needs an API key.
+
+WhatsApp sending uses [neonize](https://github.com/krypton-byte/neonize), an
+unofficial client library — WhatsApp's terms don't sanction unofficial
 clients, so there's a small standing risk of the linked number getting
 flagged, even for one message a day to one group.
 
@@ -152,10 +167,26 @@ Everything else (steps 4–7 above) is identical.
 
 - Cron schedule: edit `.github/workflows/daily-report.yml` (`cron: "0 5 * * *"`
   is UTC; [crontab.guru](https://crontab.guru) helps with conversions).
-- Coordinates: `romo_bot.config` defaults to central Rømø
-  (`LATITUDE=55.13`, `LONGITUDE=8.45`, offset slightly into open water so
-  the marine model has data to work with). Override via `LATITUDE` /
-  `LONGITUDE` environment variables if needed.
+- Weather coordinates: `romo_bot.config` defaults to central Rømø
+  (`LATITUDE=55.13`, `LONGITUDE=8.45`). Override via `LATITUDE` /
+  `LONGITUDE` environment variables if needed. This only affects the
+  *weather* forecast — tide data comes from the fixed Havneby station table
+  (see below), not these coordinates.
+
+### Refreshing the tide table
+
+The bundled tide table (`src/romo_bot/data/havneby_tides_2026.txt`) only
+covers 2026. Once that runs out (or a bit before, so there's no gap), fetch
+next year's table the same way this one was created and swap it in:
+
+```bash
+curl -s "https://ocean.dmi.dk/tides/MLWS/2027/Havneby.t.txt" -o src/romo_bot/data/havneby_tides_2027.txt
+```
+
+then update the filename in `romo_bot/clients/dmi_tide.py`
+(`DmiTideTableClient`'s default `table_filename`) and in `__main__.py` if
+overridden there, commit, and push. This is a once-a-year, few-minutes task
+— no code logic changes needed, just swapping which static file is read.
 
 ### Re-pairing
 
@@ -183,8 +214,10 @@ All four run in CI (`.github/workflows/ci.yml`) on every push/PR to `main`.
   `WeatherDataSource` / `MessageSender` protocols (dependency inversion), so
   adding a new data source or sender means writing a new class, not editing
   the service (open/closed).
-- **Pure core**: `romo_bot.tide.find_tide_extremes` is a deterministic pure
-  function (no I/O, no wall-clock) — cheap to test exhaustively.
+- **Pure core**: `romo_bot.tide.find_tide_extremes`, `romo_bot.clients.dmi_tide.parse_table`
+  /`extremes_for_date`, and `romo_bot.amber.AmberAdvisor` are all deterministic
+  (no I/O, no wall-clock passed in explicitly where it matters) — cheap to
+  test exhaustively with fixed inputs, no network or mocking required.
 - **Isolated boundary**: all `neonize` calls live in
   `romo_bot/clients/whatsapp.py`. `neonize` ships no type stubs, so it's the
   one module where mypy treats the library as `Any` — everything else is

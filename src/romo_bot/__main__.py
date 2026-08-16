@@ -3,7 +3,9 @@ from __future__ import annotations
 import logging
 import sys
 
-from romo_bot.clients.open_meteo import OpenMeteoTideClient, OpenMeteoWeatherClient
+from romo_bot.amber import AmberAdvisor
+from romo_bot.clients.dmi_tide import DmiTideTableClient
+from romo_bot.clients.open_meteo import OpenMeteoWeatherClient
 from romo_bot.clients.whatsapp import NeonizeMessageSender
 from romo_bot.config import ConfigError, Settings
 from romo_bot.report import ReportFormatter
@@ -20,12 +22,13 @@ def main() -> int:
         return 1
 
     service = DailyReportService(
-        tide_source=OpenMeteoTideClient(settings.latitude, settings.longitude, settings.timezone),
+        tide_source=DmiTideTableClient(timezone=settings.timezone),
         weather_source=OpenMeteoWeatherClient(
             settings.latitude, settings.longitude, settings.timezone
         ),
         sender=NeonizeMessageSender(settings.session_db_path),
         formatter=ReportFormatter(),
+        amber_advisor=AmberAdvisor(),
         group_jid=settings.whatsapp_group_jid,
         timezone=settings.timezone,
     )

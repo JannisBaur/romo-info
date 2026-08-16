@@ -22,7 +22,10 @@ class ReportFormatter:
             f"{report.weather.temperature_min_c:.0f}-{report.weather.temperature_max_c:.0f}°C",
             f"\U0001f4a8 Wind up to {report.weather.wind_speed_max_kmh:.0f} km/h",
             "",
-            "_Sent automatically · data: open-meteo.com_",
+            "*Amber hunting:*",
+            report.amber_note,
+            "",
+            "_Sent automatically · data: DMI, open-meteo.com_",
         ]
         return "\n".join(lines)
 

@@ -28,6 +28,7 @@ class WeatherForecast:
     temperature_min_c: float
     temperature_max_c: float
     wind_speed_max_kmh: float
+    wind_direction_deg: float
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,3 +36,4 @@ class DailyReport:
     report_date: datetime
     tide: TideForecast
     weather: WeatherForecast
+    amber_note: str

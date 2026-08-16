@@ -2,13 +2,18 @@ from __future__ import annotations
 
 import pytest
 
+from romo_bot.amber import AmberAdvisor
 from romo_bot.models import TideForecast, WeatherForecast
 from romo_bot.report import ReportFormatter
 from romo_bot.service import DailyReportService
 from tests.fakes import FailingMessageSender, FakeMessageSender, FakeTideSource, FakeWeatherSource
 
 _WEATHER = WeatherForecast(
-    summary="Sunny", temperature_min_c=10.0, temperature_max_c=15.0, wind_speed_max_kmh=10.0
+    summary="Sunny",
+    temperature_min_c=10.0,
+    temperature_max_c=15.0,
+    wind_speed_max_kmh=10.0,
+    wind_direction_deg=270.0,
 )
 
 
@@ -18,6 +23,7 @@ def _service(sender: FakeMessageSender | FailingMessageSender) -> DailyReportSer
         weather_source=FakeWeatherSource(_WEATHER),
         sender=sender,
         formatter=ReportFormatter(),
+        amber_advisor=AmberAdvisor(),
         group_jid="123@g.us",
         timezone="UTC",
     )
@@ -31,6 +37,14 @@ def test_run_sends_formatted_report_to_configured_group() -> None:
     jid, text = sender.sent[0]
     assert jid == "123@g.us"
     assert "Sunny" in text
+
+
+def test_run_includes_amber_note_from_advisor() -> None:
+    sender = FakeMessageSender()
+    _service(sender).run()
+
+    _, text = sender.sent[0]
+    assert "Amber hunting" in text
 
 
 def test_run_propagates_sender_failures() -> None:
