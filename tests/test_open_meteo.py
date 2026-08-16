@@ -121,6 +121,25 @@ def test_lookahead_reaches_the_end_of_the_requested_forecast_window() -> None:
     assert outlook.lookahead_through == date(2026, 8, 22)
 
 
+def test_strongest_onshore_wiring_matches_the_qualifying_storm_when_one_exists() -> None:
+    # The 16th (60 km/h onshore) is the only onshore day in tomorrow's past
+    # window, and the 19th (65 km/h onshore) is the only onshore day in the
+    # future window -- both already qualify as full storms, so the
+    # "strongest onshore" fields should just point at the same day.
+    _today, tomorrow, outlook = OpenMeteoWeatherClient._parse_response(_SUCCESS_PAYLOAD, _TODAY)
+
+    assert tomorrow.recent_strongest_onshore_kmh == 60.0
+    assert outlook.strongest_onshore_date == date(2026, 8, 19)
+    assert outlook.strongest_onshore_wind_kmh == 65.0
+
+
+def test_strongest_onshore_is_none_when_no_onshore_wind_in_the_window() -> None:
+    # Today's past window (13th-15th) is entirely offshore (due east).
+    today, _tomorrow, _outlook = OpenMeteoWeatherClient._parse_response(_SUCCESS_PAYLOAD, _TODAY)
+
+    assert today.recent_strongest_onshore_kmh is None
+
+
 @respx.mock
 def test_fetch_weather_forecast_raises_on_malformed_payload() -> None:
     respx.get(FORECAST_API_URL).mock(return_value=httpx.Response(200, json={"unexpected": True}))

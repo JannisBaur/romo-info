@@ -38,9 +38,16 @@ class AmberAdvisor:
                 f"Amber's likely loose from a recent storm, but it's still rough "
                 f"({weather.wind_speed_max_kmh:.0f} km/h) — wait for calmer seas.{low_tide_note}"
             )
+        if weather.recent_strongest_onshore_kmh is not None:
+            return (
+                f"No full storm in the past {weather.recent_storm_lookback_days} days, but "
+                f"there was a {weather.recent_strongest_onshore_kmh:.0f} km/h onshore blow — "
+                f"still possible, just less likely.{low_tide_note}"
+            )
         return (
-            f"No onshore storm in the past {weather.recent_storm_lookback_days} days, so "
-            f"unlikely regardless of the {weather.wind_speed_max_kmh:.0f} km/h wind.{low_tide_note}"
+            f"No onshore wind at all in the past {weather.recent_storm_lookback_days} days, "
+            f"so unlikely regardless of the {weather.wind_speed_max_kmh:.0f} km/h wind."
+            f"{low_tide_note}"
         )
 
     @staticmethod
@@ -53,6 +60,12 @@ class AmberAdvisor:
             return (
                 f"\U0001f52e Storm forecast {outlook.upcoming_storm_date:%a %d %b}"
                 " — worth checking again a day or two after that."
+            )
+        if outlook.strongest_onshore_date is not None:
+            return (
+                f"\U0001f52e No full storm forecast through {outlook.lookahead_through:%a %d %b}, "
+                f"but {outlook.strongest_onshore_date:%a %d %b} looks like the best chance "
+                f"({outlook.strongest_onshore_wind_kmh:.0f} km/h onshore)."
             )
         return f"\U0001f52e No storm forecast through {outlook.lookahead_through:%a %d %b}."
 

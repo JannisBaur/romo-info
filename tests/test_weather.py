@@ -4,7 +4,12 @@ from datetime import date, datetime
 
 import pytest
 
-from romo_bot.weather import bucket_day_parts, had_recent_onshore_storm, next_onshore_storm
+from romo_bot.weather import (
+    bucket_day_parts,
+    had_recent_onshore_storm,
+    next_onshore_storm,
+    strongest_onshore_day,
+)
 
 
 def _hourly_range(start_hour: int, end_hour: int) -> list[datetime]:
@@ -113,3 +118,36 @@ def test_next_onshore_storm_empty_input_returns_none() -> None:
 def test_next_onshore_storm_mismatched_lengths_raise_value_error() -> None:
     with pytest.raises(ValueError, match="same length"):
         next_onshore_storm([date(2026, 8, 18)], [50.0, 10.0], [250.0])
+
+
+def test_strongest_onshore_day_picks_the_highest_speed_onshore_day() -> None:
+    dates = [date(2026, 8, 18), date(2026, 8, 19), date(2026, 8, 20)]
+    speeds = [30.0, 50.0, 40.0]  # none reach the full-storm threshold
+    directions = [250.0, 260.0, 90.0]  # the 20th is offshore, excluded
+
+    assert strongest_onshore_day(dates, speeds, directions) == (date(2026, 8, 19), 50.0)
+
+
+def test_strongest_onshore_day_ignores_offshore_days_regardless_of_speed() -> None:
+    dates = [date(2026, 8, 18), date(2026, 8, 19)]
+    speeds = [70.0, 20.0]
+    directions = [90.0, 250.0]  # the strong day is offshore, so the weaker onshore day wins
+
+    assert strongest_onshore_day(dates, speeds, directions) == (date(2026, 8, 19), 20.0)
+
+
+def test_strongest_onshore_day_returns_none_when_nothing_is_onshore() -> None:
+    dates = [date(2026, 8, 18), date(2026, 8, 19)]
+    speeds = [30.0, 40.0]
+    directions = [90.0, 90.0]
+
+    assert strongest_onshore_day(dates, speeds, directions) is None
+
+
+def test_strongest_onshore_day_empty_input_returns_none() -> None:
+    assert strongest_onshore_day([], [], []) is None
+
+
+def test_strongest_onshore_day_mismatched_lengths_raise_value_error() -> None:
+    with pytest.raises(ValueError, match="same length"):
+        strongest_onshore_day([date(2026, 8, 18)], [50.0, 10.0], [250.0])

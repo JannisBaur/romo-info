@@ -88,6 +88,34 @@ def next_onshore_storm(
     return min(storm_dates) if storm_dates else None
 
 
+def strongest_onshore_day(
+    dates: Sequence[date],
+    daily_wind_speeds_kmh: Sequence[float],
+    daily_wind_directions_deg: Sequence[float],
+) -> tuple[date, float] | None:
+    """The onshore-direction day with the strongest wind in the given
+    window, regardless of whether it clears _STORM_WIND_KMH.
+
+    A hard threshold on its own throws away useful information: a 50 km/h
+    onshore blow that just misses the "storm" cutoff isn't nothing -- it
+    may be the best chance going. This lets callers mention it instead of
+    collapsing "almost a storm" and "dead calm" into the same message.
+    Returns None only if no day in the window had onshore wind at all.
+    """
+    if not (len(dates) == len(daily_wind_speeds_kmh) == len(daily_wind_directions_deg)):
+        raise ValueError(
+            "dates, daily_wind_speeds_kmh, and daily_wind_directions_deg must be the same length"
+        )
+    onshore_days = [
+        (d, speed)
+        for d, speed, direction in zip(
+            dates, daily_wind_speeds_kmh, daily_wind_directions_deg, strict=True
+        )
+        if _ONSHORE_MIN_DEG <= direction <= _ONSHORE_MAX_DEG
+    ]
+    return max(onshore_days, key=lambda day_and_speed: day_and_speed[1]) if onshore_days else None
+
+
 def bucket_day_parts(
     timestamps: Sequence[datetime],
     temperatures_c: Sequence[float],

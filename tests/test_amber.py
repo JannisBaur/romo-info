@@ -30,7 +30,13 @@ _MIXED_LOW_TIDES = TideForecast(
 _NO_TIDE = TideForecast(extremes=())
 
 
-def _weather(*, speed_kmh: float, recent_storm: bool, lookback_days: int = 3) -> WeatherForecast:
+def _weather(
+    *,
+    speed_kmh: float,
+    recent_storm: bool,
+    lookback_days: int = 3,
+    strongest_onshore_kmh: float | None = None,
+) -> WeatherForecast:
     return WeatherForecast(
         day_parts=(),
         temperature_min_c=14.0,
@@ -39,6 +45,7 @@ def _weather(*, speed_kmh: float, recent_storm: bool, lookback_days: int = 3) ->
         wind_direction_deg=270.0,
         recent_onshore_storm=recent_storm,
         recent_storm_lookback_days=lookback_days,
+        recent_strongest_onshore_kmh=strongest_onshore_kmh,
     )
 
 
@@ -60,12 +67,26 @@ def test_recent_storm_but_still_rough_today_says_wait() -> None:
     assert "40" in note
 
 
+def test_near_miss_onshore_blow_is_mentioned_instead_of_hidden() -> None:
+    # A 50 km/h onshore blow that misses the full-storm threshold isn't
+    # nothing -- it may be the best chance going, so it shouldn't read
+    # identically to a day with no onshore wind at all.
+    weather = _weather(
+        speed_kmh=20.0, recent_storm=False, lookback_days=3, strongest_onshore_kmh=50.0
+    )
+
+    note = AmberAdvisor().suggest(weather, _DAYTIME_LOW_TIDE)
+
+    assert "still possible" in note
+    assert "50" in note
+
+
 def test_no_recent_storm_explains_why_todays_wind_does_not_count() -> None:
     weather = _weather(speed_kmh=37.0, recent_storm=False, lookback_days=3)
 
     note = AmberAdvisor().suggest(weather, _DAYTIME_LOW_TIDE)
 
-    assert "No onshore storm in the past 3 days" in note
+    assert "No onshore wind at all in the past 3 days" in note
     assert "37" in note
 
 
@@ -110,7 +131,10 @@ def test_suggest_never_mentions_upcoming_storm() -> None:
 
 def test_describe_outlook_names_the_upcoming_storm() -> None:
     outlook = StormOutlook(
-        upcoming_storm_date=date(2026, 8, 19), lookahead_through=date(2026, 8, 22)
+        upcoming_storm_date=date(2026, 8, 19),
+        lookahead_through=date(2026, 8, 22),
+        strongest_onshore_date=date(2026, 8, 19),
+        strongest_onshore_wind_kmh=70.0,
     )
 
     note = AmberAdvisor.describe_outlook(outlook)
@@ -119,8 +143,31 @@ def test_describe_outlook_names_the_upcoming_storm() -> None:
     assert "Storm forecast" in note
 
 
-def test_describe_outlook_names_the_date_checked_through_when_none_found() -> None:
-    outlook = StormOutlook(upcoming_storm_date=None, lookahead_through=date(2026, 8, 22))
+def test_describe_outlook_mentions_near_miss_when_no_full_storm_qualifies() -> None:
+    # A 50 km/h onshore day that misses the full-storm threshold shouldn't
+    # read identically to a completely calm week -- it may be the best
+    # chance in the window.
+    outlook = StormOutlook(
+        upcoming_storm_date=None,
+        lookahead_through=date(2026, 8, 22),
+        strongest_onshore_date=date(2026, 8, 20),
+        strongest_onshore_wind_kmh=50.0,
+    )
+
+    note = AmberAdvisor.describe_outlook(outlook)
+
+    assert "No full storm forecast through Sat 22 Aug" in note
+    assert "Thu 20 Aug" in note
+    assert "50" in note
+
+
+def test_describe_outlook_names_the_date_checked_through_when_nothing_onshore_at_all() -> None:
+    outlook = StormOutlook(
+        upcoming_storm_date=None,
+        lookahead_through=date(2026, 8, 22),
+        strongest_onshore_date=None,
+        strongest_onshore_wind_kmh=None,
+    )
 
     note = AmberAdvisor.describe_outlook(outlook)
 

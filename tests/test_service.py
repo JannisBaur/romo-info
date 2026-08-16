@@ -18,6 +18,7 @@ _TODAY_WEATHER = WeatherForecast(
     wind_direction_deg=270.0,
     recent_onshore_storm=True,
     recent_storm_lookback_days=3,
+    recent_strongest_onshore_kmh=60.0,
 )
 _TOMORROW_WEATHER = WeatherForecast(
     day_parts=(DayPartForecast(label="Morning", summary="Cloudy", temperature_c=11.0),),
@@ -27,8 +28,14 @@ _TOMORROW_WEATHER = WeatherForecast(
     wind_direction_deg=200.0,
     recent_onshore_storm=False,
     recent_storm_lookback_days=4,
+    recent_strongest_onshore_kmh=None,
 )
-_OUTLOOK = StormOutlook(upcoming_storm_date=date(2026, 8, 19), lookahead_through=date(2026, 8, 22))
+_OUTLOOK = StormOutlook(
+    upcoming_storm_date=date(2026, 8, 19),
+    lookahead_through=date(2026, 8, 22),
+    strongest_onshore_date=date(2026, 8, 19),
+    strongest_onshore_wind_kmh=70.0,
+)
 
 
 def _service(sender: FakeMessageSender | FailingMessageSender) -> DailyReportService:

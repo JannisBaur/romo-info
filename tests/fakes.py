@@ -5,7 +5,12 @@ from datetime import date
 
 from romo_bot.models import StormOutlook, TideForecast, WeatherForecast
 
-_DEFAULT_OUTLOOK = StormOutlook(upcoming_storm_date=None, lookahead_through=date(2026, 8, 22))
+_DEFAULT_OUTLOOK = StormOutlook(
+    upcoming_storm_date=None,
+    lookahead_through=date(2026, 8, 22),
+    strongest_onshore_date=None,
+    strongest_onshore_wind_kmh=None,
+)
 
 
 @dataclass

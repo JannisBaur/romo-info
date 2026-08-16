@@ -7,7 +7,12 @@ from zoneinfo import ZoneInfo
 import httpx
 
 from romo_bot.models import StormOutlook, WeatherForecast
-from romo_bot.weather import bucket_day_parts, had_recent_onshore_storm, next_onshore_storm
+from romo_bot.weather import (
+    bucket_day_parts,
+    had_recent_onshore_storm,
+    next_onshore_storm,
+    strongest_onshore_day,
+)
 
 FORECAST_API_URL = "https://api.open-meteo.com/v1/forecast"
 
@@ -96,14 +101,16 @@ class OpenMeteoWeatherClient:
         tomorrow_date = today_date + timedelta(days=1)
 
         future_indices = [i for i, d in enumerate(daily_dates) if d > tomorrow_date]
-        upcoming_storm_date = next_onshore_storm(
-            [daily_dates[i] for i in future_indices],
-            [wind_speeds[i] for i in future_indices],
-            [wind_directions[i] for i in future_indices],
-        )
+        future_dates = [daily_dates[i] for i in future_indices]
+        future_speeds = [wind_speeds[i] for i in future_indices]
+        future_directions = [wind_directions[i] for i in future_indices]
+        upcoming_storm_date = next_onshore_storm(future_dates, future_speeds, future_directions)
+        strongest_upcoming = strongest_onshore_day(future_dates, future_speeds, future_directions)
         storm_outlook = StormOutlook(
             upcoming_storm_date=upcoming_storm_date,
             lookahead_through=today_date + timedelta(days=_FORECAST_DAYS_TOTAL - 1),
+            strongest_onshore_date=strongest_upcoming[0] if strongest_upcoming else None,
+            strongest_onshore_wind_kmh=strongest_upcoming[1] if strongest_upcoming else None,
         )
 
         def forecast_for(target_date: date) -> WeatherForecast:
@@ -118,17 +125,19 @@ class OpenMeteoWeatherClient:
             # check, today itself counts as part of the recent past, so
             # tomorrow's lookback is naturally one day longer than today's.
             past_indices = [i for i, d in enumerate(daily_dates) if d < target_date]
+            past_dates = [daily_dates[i] for i in past_indices]
+            past_speeds = [wind_speeds[i] for i in past_indices]
+            past_directions = [wind_directions[i] for i in past_indices]
+            strongest_recent = strongest_onshore_day(past_dates, past_speeds, past_directions)
             return WeatherForecast(
                 day_parts=day_parts,
                 temperature_min_c=temperature_mins[day_index],
                 temperature_max_c=temperature_maxs[day_index],
                 wind_speed_max_kmh=wind_speeds[day_index],
                 wind_direction_deg=wind_directions[day_index],
-                recent_onshore_storm=had_recent_onshore_storm(
-                    [wind_speeds[i] for i in past_indices],
-                    [wind_directions[i] for i in past_indices],
-                ),
+                recent_onshore_storm=had_recent_onshore_storm(past_speeds, past_directions),
                 recent_storm_lookback_days=len(past_indices),
+                recent_strongest_onshore_kmh=(strongest_recent[1] if strongest_recent else None),
             )
 
         return forecast_for(today_date), forecast_for(tomorrow_date), storm_outlook

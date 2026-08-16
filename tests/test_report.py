@@ -27,6 +27,7 @@ def _weather(*, storm: bool = True) -> WeatherForecast:
         wind_direction_deg=270.0,
         recent_onshore_storm=storm,
         recent_storm_lookback_days=3,
+        recent_strongest_onshore_kmh=None,
     )
 
 
@@ -141,6 +142,7 @@ def test_missing_weather_data_shows_fallback_message() -> None:
             wind_direction_deg=0.0,
             recent_onshore_storm=False,
             recent_storm_lookback_days=3,
+            recent_strongest_onshore_kmh=None,
         ),
         amber_note=today.amber_note,
     )

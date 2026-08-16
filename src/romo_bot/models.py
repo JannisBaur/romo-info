@@ -38,6 +38,11 @@ class WeatherForecast:
     wind_direction_deg: float
     recent_onshore_storm: bool
     recent_storm_lookback_days: int
+    # The strongest onshore-direction day in the lookback window, even if it
+    # didn't clear the full "storm" threshold -- None only if there was no
+    # onshore wind at all. Lets the amber note mention a near-miss blow
+    # instead of a threshold silently discarding it.
+    recent_strongest_onshore_kmh: float | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,6 +54,13 @@ class StormOutlook:
 
     upcoming_storm_date: date | None
     lookahead_through: date
+    # Strongest onshore-direction day in the lookahead window, even if it
+    # never reaches full "storm" strength -- same reasoning as
+    # WeatherForecast.recent_strongest_onshore_kmh above, applied forward
+    # instead of backward. None only if no day in the window had onshore
+    # wind at all.
+    strongest_onshore_date: date | None
+    strongest_onshore_wind_kmh: float | None
 
 
 @dataclass(frozen=True, slots=True)
