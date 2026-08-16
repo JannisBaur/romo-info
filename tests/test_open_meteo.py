@@ -7,12 +7,12 @@ import httpx
 import pytest
 import respx
 
-from romo_bot.clients.open_meteo import (
+from romo_info.clients.open_meteo import (
     FORECAST_API_URL,
     OpenMeteoClientError,
     OpenMeteoWeatherClient,
 )
-from romo_bot.models import StormOutlook, WeatherForecast
+from romo_info.models import StormOutlook, WeatherForecast
 
 _TODAY = date(2026, 8, 16)
 # Matches the client's real days=2, _STORM_LOOKAHEAD_DAYS=5 combination --

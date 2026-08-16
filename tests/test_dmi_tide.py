@@ -5,8 +5,8 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from romo_bot.clients.dmi_tide import DmiTideTableError, extremes_for_date, parse_table
-from romo_bot.models import TideDirection
+from romo_info.clients.dmi_tide import DmiTideTableError, extremes_for_date, parse_table
+from romo_info.models import TideDirection
 
 _UTC = ZoneInfo("UTC")
 

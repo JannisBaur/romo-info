@@ -3,13 +3,13 @@ from __future__ import annotations
 import logging
 import sys
 
-from romo_bot.amber import AmberAdvisor
-from romo_bot.clients.dmi_tide import DmiTideTableClient
-from romo_bot.clients.file_publisher import FileReportPublisher
-from romo_bot.clients.open_meteo import OpenMeteoWeatherClient
-from romo_bot.config import ConfigError, Settings
-from romo_bot.report import ReportFormatter
-from romo_bot.service import DailyReportService
+from romo_info.amber import AmberAdvisor
+from romo_info.clients.dmi_tide import DmiTideTableClient
+from romo_info.clients.file_publisher import FileReportPublisher
+from romo_info.clients.open_meteo import OpenMeteoWeatherClient
+from romo_info.config import ConfigError, Settings
+from romo_info.report import ReportFormatter
+from romo_info.service import DailyReportService
 
 
 def main() -> int:

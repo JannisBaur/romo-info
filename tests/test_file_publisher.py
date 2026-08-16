@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from romo_bot.clients.file_publisher import FileReportPublisher
+from romo_info.clients.file_publisher import FileReportPublisher
 
 
 def test_publish_writes_the_html_to_the_configured_path(tmp_path: Path) -> None:

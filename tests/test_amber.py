@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-from romo_bot.amber import AmberAdvisor
-from romo_bot.models import (
+from romo_info.amber import AmberAdvisor
+from romo_info.models import (
     StormOutlook,
     TideDirection,
     TideExtreme,

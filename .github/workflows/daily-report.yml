@@ -39,7 +39,7 @@ jobs:
         run: poetry install --no-interaction --only main
 
       - name: Build report page
-        run: poetry run python -m romo_bot
+        run: poetry run python -m romo_info
 
       - uses: actions/configure-pages@v5
 

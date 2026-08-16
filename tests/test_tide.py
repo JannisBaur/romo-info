@@ -4,8 +4,8 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from romo_bot.models import TideDirection
-from romo_bot.tide import find_tide_extremes
+from romo_info.models import TideDirection
+from romo_info.tide import find_tide_extremes
 
 
 def _hours(n: int) -> list[datetime]:

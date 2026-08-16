@@ -4,7 +4,7 @@ from datetime import date, datetime
 
 import pytest
 
-from romo_bot.weather import (
+from romo_info.weather import (
     bucket_day_parts,
     had_recent_onshore_storm,
     next_onshore_storm,

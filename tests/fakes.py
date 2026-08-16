@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import date
 
-from romo_bot.models import StormOutlook, TideForecast, WeatherForecast
+from romo_info.models import StormOutlook, TideForecast, WeatherForecast
 
 _DEFAULT_OUTLOOK = StormOutlook(
     upcoming_storm_date=None,

@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from datetime import date, datetime
 
-from romo_bot.models import DayPartForecast
+from romo_info.models import DayPartForecast
 
 # Open-Meteo's weathercode -> short human summary (WMO code table, common subset).
 WEATHER_CODE_SUMMARIES: dict[int, str] = {

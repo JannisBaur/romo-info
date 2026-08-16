@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from romo_bot.models import StormOutlook, TideDirection, TideExtreme, TideForecast, WeatherForecast
+from romo_info.models import StormOutlook, TideDirection, TideExtreme, TideForecast, WeatherForecast
 
 # Amber washes ashore on Denmark's North Sea coast in two phases: a storm
 # (classically from the SW) loosens it from the seabed, then it's carried
@@ -22,7 +22,7 @@ class AmberAdvisor:
     """Suggests whether conditions favour amber hunting on Rømø's beach.
 
     Pure deterministic heuristic, no I/O and no external API. See
-    romo_bot.weather.had_recent_onshore_storm for the storm-detection side
+    romo_info.weather.had_recent_onshore_storm for the storm-detection side
     of this (checked over the past few days, not just today -- today's own
     wind, however strong, does not by itself count as "recent").
     """

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-from romo_bot.models import (
+from romo_info.models import (
     DailyReport,
     DayForecast,
     DayPartForecast,
@@ -11,7 +11,7 @@ from romo_bot.models import (
     TideForecast,
     WeatherForecast,
 )
-from romo_bot.report import ReportFormatter
+from romo_info.report import ReportFormatter
 
 
 def _weather(*, storm: bool = True) -> WeatherForecast:

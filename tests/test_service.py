@@ -4,10 +4,10 @@ from datetime import date
 
 import pytest
 
-from romo_bot.amber import AmberAdvisor
-from romo_bot.models import DayPartForecast, StormOutlook, TideForecast, WeatherForecast
-from romo_bot.report import ReportFormatter
-from romo_bot.service import DailyReportService, _label_for
+from romo_info.amber import AmberAdvisor
+from romo_info.models import DayPartForecast, StormOutlook, TideForecast, WeatherForecast
+from romo_info.report import ReportFormatter
+from romo_info.service import DailyReportService, _label_for
 from tests.fakes import (
     FailingReportPublisher,
     FakeReportPublisher,

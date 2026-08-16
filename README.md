@@ -1,4 +1,4 @@
-# romo-bot
+# romo-info
 
 Publishes a daily web page with tide times, weather, and an amber-hunting
 outlook for Rømø, Denmark. Runs once a day as a scheduled GitHub Actions
@@ -11,7 +11,7 @@ credentials to store, and no MCP/LLM agent involved.
 GitHub Actions (cron, once/day)
         │
         ▼
-romo_bot.__main__:main
+romo_info.__main__:main
         │
         ├── DmiTideTableClient     ──  bundled DMI Havneby tide table (no network)
         ├── OpenMeteoWeatherClient ──► api.open-meteo.com               (weather)
@@ -24,7 +24,7 @@ actions/deploy-pages ──► GitHub Pages
 ```
 
 Every dependency above is a narrow `Protocol` (`TideDataSource`,
-`WeatherDataSource`, `ReportPublisher` in `src/romo_bot/clients/protocols.py`).
+`WeatherDataSource`, `ReportPublisher` in `src/romo_info/clients/protocols.py`).
 `DailyReportService` only knows about those protocols, not the concrete
 clients — so they're swappable and the orchestration logic is tested with
 fakes, no network required (see `tests/`).
@@ -35,7 +35,7 @@ configured in repository secrets.
 
 **Tide data** comes from a DMI (Danish Meteorological Institute) harmonic
 tide table for the Havneby station, bundled directly in the repo
-(`src/romo_bot/data/havneby_tides_2026.txt`) rather than fetched live. This
+(`src/romo_info/data/havneby_tides_2026.txt`) rather than fetched live. This
 is deliberate: DMI's live ocean-model API turned out to be unreliable from
 shared cloud IPs, and a generic global marine model (tried first, since
 removed) was off by up to ~2 hours for this stretch of Wadden Sea
@@ -44,7 +44,7 @@ matches official sources closely, and has zero runtime network dependency
 for tides — but it **only covers one calendar year**; see "Refreshing the
 tide table" below.
 
-**Weather** is split into Morning / Afternoon / Evening (`romo_bot/weather.py`
+**Weather** is split into Morning / Afternoon / Evening (`romo_info/weather.py`
 buckets Open-Meteo's hourly data into those windows) rather than one blended
 daily summary, since "sunny morning, rain later" is a lot more actionable
 than a single averaged line. Transient network failures are retried (3
@@ -52,7 +52,7 @@ attempts with backoff) so one dropped connection doesn't cost the day's
 report.
 
 **Amber-hunting outlook** is a small deterministic rule
-(`romo_bot/amber.py` + `romo_bot/weather.had_recent_onshore_storm`), based
+(`romo_info/amber.py` + `romo_info/weather.had_recent_onshore_storm`), based
 on how amber actually reaches Denmark's North Sea coast: a storm (onshore,
 classically from the SW) loosens it from the seabed first, then it washes
 ashore during the *calmer* weather that follows, easiest to spot on the
@@ -70,7 +70,7 @@ those same sources rather than being guessed. A strong onshore day that
 being silently discarded.
 
 The page also carries a report-wide storm outlook
-(`romo_bot.weather.next_onshore_storm`) looking 5 days past the last
+(`romo_info.weather.next_onshore_storm`) looking 5 days past the last
 reported day, purely to flag an *upcoming* onshore storm worth planning
 around — e.g. "storm forecast Wed, worth checking again a day or two
 after". Open-Meteo's own forecast skill drops off well before that
@@ -97,7 +97,7 @@ That's the whole setup — no pairing, no secrets, no local commands.
 - How many days to show: `DAYS_TO_REPORT` (default `1` — today only; set
   `2` for today + tomorrow, and so on). Set it in the workflow's `env:` for
   the "Build report page" step.
-- Weather coordinates: `romo_bot.config` defaults to central Rømø
+- Weather coordinates: `romo_info.config` defaults to central Rømø
   (`LATITUDE=55.13`, `LONGITUDE=8.45`). This only affects the *weather*
   forecast — tide data comes from the fixed Havneby station table.
 - Output location: `OUTPUT_PATH` (default `public/index.html`). The
@@ -105,15 +105,15 @@ That's the whole setup — no pairing, no secrets, no local commands.
 
 ### Refreshing the tide table
 
-The bundled tide table (`src/romo_bot/data/havneby_tides_2026.txt`) only
+The bundled tide table (`src/romo_info/data/havneby_tides_2026.txt`) only
 covers 2026. Once that runs out (or a bit before, so there's no gap), fetch
 next year's table the same way this one was created and swap it in:
 
 ```bash
-curl -s "https://ocean.dmi.dk/tides/MLWS/2027/Havneby.t.txt" -o src/romo_bot/data/havneby_tides_2027.txt
+curl -s "https://ocean.dmi.dk/tides/MLWS/2027/Havneby.t.txt" -o src/romo_info/data/havneby_tides_2027.txt
 ```
 
-then update the filename in `romo_bot/clients/dmi_tide.py`
+then update the filename in `romo_info/clients/dmi_tide.py`
 (`DmiTideTableClient`'s default `table_filename`), commit, and push. This is
 a once-a-year, few-minutes task — no code logic changes needed, just
 swapping which static file is read.
@@ -125,7 +125,7 @@ poetry install
 poetry run ruff check .        # lint + security (ruff's bandit-equivalent rules)
 poetry run ruff format --check .
 poetry run mypy                # strict type checking
-poetry run pytest --cov=romo_bot
+poetry run pytest --cov=romo_info
 ```
 
 All four run in CI (`.github/workflows/ci.yml`) on every push/PR to `main`.
@@ -133,7 +133,7 @@ All four run in CI (`.github/workflows/ci.yml`) on every push/PR to `main`.
 To preview the page locally without deploying:
 
 ```bash
-poetry run python -m romo_bot && open public/index.html
+poetry run python -m romo_info && open public/index.html
 ```
 
 ### Design notes
@@ -142,13 +142,13 @@ poetry run python -m romo_bot && open public/index.html
   `WeatherDataSource` / `ReportPublisher` protocols (dependency inversion),
   so adding a new data source or output target means writing a new class,
   not editing the service (open/closed).
-- **Pure core**: `romo_bot.tide.find_tide_extremes`, `romo_bot.clients.dmi_tide.parse_table`
-  /`extremes_for_date`, `romo_bot.weather.bucket_day_parts`
+- **Pure core**: `romo_info.tide.find_tide_extremes`, `romo_info.clients.dmi_tide.parse_table`
+  /`extremes_for_date`, `romo_info.weather.bucket_day_parts`
   /`had_recent_onshore_storm`/`next_onshore_storm`/`strongest_onshore_day`,
-  and `romo_bot.amber.AmberAdvisor` are all deterministic (no I/O,
+  and `romo_info.amber.AmberAdvisor` are all deterministic (no I/O,
   wall-clock passed in explicitly where it matters) — cheap to test
   exhaustively with fixed inputs, no network or mocking required.
-- **Composition root**: `romo_bot/__main__.py` is the only place concrete
+- **Composition root**: `romo_info/__main__.py` is the only place concrete
   clients get wired together; nothing else imports them directly.
 - **Escaping**: `ReportFormatter` HTML-escapes everything that comes from
   the data sources, so a stray `<` or `&` in an API response can't break

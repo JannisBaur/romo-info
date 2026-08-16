@@ -31,4 +31,4 @@ jobs:
         run: poetry run mypy
 
       - name: pytest
-        run: poetry run pytest --cov=romo_bot --cov-report=term-missing
+        run: poetry run pytest --cov=romo_info --cov-report=term-missing

@@ -4,8 +4,8 @@ import importlib.resources
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from romo_bot.models import TideExtreme, TideForecast
-from romo_bot.tide import find_tide_extremes
+from romo_info.models import TideExtreme, TideForecast
+from romo_info.tide import find_tide_extremes
 
 # DMI publishes table timestamps in fixed Danish Standard Time (UTC+1)
 # year-round, regardless of daylight saving -- not the actual civil
@@ -80,7 +80,7 @@ class DmiTideTableClient:
 
     def fetch_tide_forecast(self, days: int) -> tuple[TideForecast, ...]:
         text = (
-            importlib.resources.files("romo_bot")
+            importlib.resources.files("romo_info")
             .joinpath("data", self._table_filename)
             .read_text(encoding="utf-8")
         )

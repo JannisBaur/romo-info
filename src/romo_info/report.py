@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from html import escape
 
-from romo_bot.models import DailyReport, DayForecast, TideDirection, TideForecast, WeatherForecast
+from romo_info.models import DailyReport, DayForecast, TideDirection, TideForecast, WeatherForecast
 
 _ARROW = {TideDirection.HIGH: "⬆️ High", TideDirection.LOW: "⬇️ Low"}
 _DAY_PART_EMOJI = {"Morning": "\U0001f305", "Afternoon": "☀️", "Evening": "\U0001f306"}

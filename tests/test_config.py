@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from romo_bot.config import ConfigError, Settings
+from romo_info.config import ConfigError, Settings
 
 
 def test_from_env_uses_defaults_for_optional_values() -> None:

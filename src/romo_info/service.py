@@ -5,10 +5,10 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from romo_bot.amber import AmberAdvisor
-from romo_bot.clients.protocols import ReportPublisher, TideDataSource, WeatherDataSource
-from romo_bot.models import DailyReport, DayForecast
-from romo_bot.report import ReportFormatter
+from romo_info.amber import AmberAdvisor
+from romo_info.clients.protocols import ReportPublisher, TideDataSource, WeatherDataSource
+from romo_info.models import DailyReport, DayForecast
+from romo_info.report import ReportFormatter
 
 logger = logging.getLogger(__name__)
 

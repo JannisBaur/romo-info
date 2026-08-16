@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from datetime import datetime
 
-from romo_bot.models import TideDirection, TideExtreme
+from romo_info.models import TideDirection, TideExtreme
 
 
 def find_tide_extremes(

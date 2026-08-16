@@ -1,11 +1,11 @@
 [tool.poetry]
-name = "romo-bot"
+name = "romo-info"
 version = "0.1.0"
 description = "Publishes a daily Rømø tide, weather, and amber-hunting page to GitHub Pages."
 authors = ["Jannis Baur"]
 license = "MIT"
 readme = "README.md"
-packages = [{ include = "romo_bot", from = "src" }]
+packages = [{ include = "romo_info", from = "src" }]
 
 [tool.poetry.dependencies]
 python = "^3.12"
@@ -19,7 +19,7 @@ ruff = "^0.8"
 mypy = "^1.13"
 
 [tool.poetry.scripts]
-romo-bot = "romo_bot.__main__:main"
+romo-info = "romo_info.__main__:main"
 
 [build-system]
 requires = ["poetry-core>=1.9"]

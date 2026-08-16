@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from romo_bot.models import StormOutlook, TideForecast, WeatherForecast
+from romo_info.models import StormOutlook, TideForecast, WeatherForecast
 
 
 class TideDataSource(Protocol):

@@ -8,8 +8,8 @@ from zoneinfo import ZoneInfo
 
 import httpx
 
-from romo_bot.models import StormOutlook, WeatherForecast
-from romo_bot.weather import (
+from romo_info.models import StormOutlook, WeatherForecast
+from romo_info.weather import (
     bucket_day_parts,
     had_recent_onshore_storm,
     next_onshore_storm,
