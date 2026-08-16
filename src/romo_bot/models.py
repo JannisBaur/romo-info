@@ -37,6 +37,7 @@ class WeatherForecast:
     wind_speed_max_kmh: float
     wind_direction_deg: float
     recent_onshore_storm: bool
+    upcoming_storm_date: date | None
 
 
 @dataclass(frozen=True, slots=True)

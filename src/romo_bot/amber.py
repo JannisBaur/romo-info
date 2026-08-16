@@ -29,16 +29,24 @@ class AmberAdvisor:
         low_tide_note = self._low_tide_note(tide)
 
         if weather.recent_onshore_storm and is_calm_enough_today:
-            return f"Good conditions — recent onshore storm, calmer now.{low_tide_note}"
-        if weather.recent_onshore_storm:
-            return (
+            note = f"Good conditions — recent onshore storm, calmer now.{low_tide_note}"
+        elif weather.recent_onshore_storm:
+            note = (
                 f"Amber's likely loose from a recent storm, but it's still rough "
                 f"({weather.wind_speed_max_kmh:.0f} km/h) — wait for calmer seas.{low_tide_note}"
             )
-        return (
-            f"No onshore storm in the past few days, so unlikely regardless of "
-            f"the {weather.wind_speed_max_kmh:.0f} km/h wind.{low_tide_note}"
-        )
+        else:
+            note = (
+                f"No onshore storm in the past few days, so unlikely regardless of "
+                f"the {weather.wind_speed_max_kmh:.0f} km/h wind.{low_tide_note}"
+            )
+
+        if weather.upcoming_storm_date is not None:
+            note += (
+                f"\n\U0001f30a Onshore storm forecast {weather.upcoming_storm_date:%a %d %b}"
+                " — worth checking again a day or two after."
+            )
+        return note
 
     @staticmethod
     def _low_tide_note(tide: TideForecast) -> str:

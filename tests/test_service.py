@@ -15,6 +15,7 @@ _TODAY_WEATHER = WeatherForecast(
     wind_speed_max_kmh=10.0,
     wind_direction_deg=270.0,
     recent_onshore_storm=True,
+    upcoming_storm_date=None,
 )
 _TOMORROW_WEATHER = WeatherForecast(
     day_parts=(DayPartForecast(label="Morning", summary="Cloudy", temperature_c=11.0),),
@@ -23,6 +24,7 @@ _TOMORROW_WEATHER = WeatherForecast(
     wind_speed_max_kmh=15.0,
     wind_direction_deg=200.0,
     recent_onshore_storm=False,
+    upcoming_storm_date=None,
 )
 
 

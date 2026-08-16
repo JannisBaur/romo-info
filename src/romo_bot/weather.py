@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import date, datetime
 
 from romo_bot.models import DayPartForecast
 
@@ -61,6 +61,29 @@ def had_recent_onshore_storm(
         speed >= _STORM_WIND_KMH and _ONSHORE_MIN_DEG <= direction <= _ONSHORE_MAX_DEG
         for speed, direction in zip(daily_wind_speeds_kmh, daily_wind_directions_deg, strict=True)
     )
+
+
+def next_onshore_storm(
+    dates: Sequence[date],
+    daily_wind_speeds_kmh: Sequence[float],
+    daily_wind_directions_deg: Sequence[float],
+) -> date | None:
+    """Earliest of the given (future) dates with a strong onshore blow
+    forecast, or None if none qualify -- a heads-up for planning ahead,
+    since amber is best hunted in the calm that follows a storm like this.
+    """
+    if not (len(dates) == len(daily_wind_speeds_kmh) == len(daily_wind_directions_deg)):
+        raise ValueError(
+            "dates, daily_wind_speeds_kmh, and daily_wind_directions_deg must be the same length"
+        )
+    storm_dates = [
+        d
+        for d, speed, direction in zip(
+            dates, daily_wind_speeds_kmh, daily_wind_directions_deg, strict=True
+        )
+        if speed >= _STORM_WIND_KMH and _ONSHORE_MIN_DEG <= direction <= _ONSHORE_MAX_DEG
+    ]
+    return min(storm_dates) if storm_dates else None
 
 
 def bucket_day_parts(

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 
 from romo_bot.amber import AmberAdvisor
 from romo_bot.models import TideDirection, TideExtreme, TideForecast, WeatherForecast
@@ -24,7 +24,9 @@ _MIXED_LOW_TIDES = TideForecast(
 _NO_TIDE = TideForecast(extremes=())
 
 
-def _weather(*, speed_kmh: float, recent_storm: bool) -> WeatherForecast:
+def _weather(
+    *, speed_kmh: float, recent_storm: bool, upcoming_storm: date | None = None
+) -> WeatherForecast:
     return WeatherForecast(
         day_parts=(),
         temperature_min_c=14.0,
@@ -32,6 +34,7 @@ def _weather(*, speed_kmh: float, recent_storm: bool) -> WeatherForecast:
         wind_speed_max_kmh=speed_kmh,
         wind_direction_deg=270.0,
         recent_onshore_storm=recent_storm,
+        upcoming_storm_date=upcoming_storm,
     )
 
 
@@ -87,3 +90,20 @@ def test_prefers_daytime_low_tide_over_overnight_one() -> None:
 
     assert "Best around low tide (~12:14)" in note
     assert "00:07" not in note
+
+
+def test_upcoming_storm_is_mentioned_as_a_heads_up() -> None:
+    weather = _weather(speed_kmh=15.0, recent_storm=False, upcoming_storm=date(2026, 8, 19))
+
+    note = AmberAdvisor().suggest(weather, _DAYTIME_LOW_TIDE)
+
+    assert "Wed 19 Aug" in note
+    assert "storm forecast" in note.lower()
+
+
+def test_no_upcoming_storm_omits_heads_up() -> None:
+    weather = _weather(speed_kmh=15.0, recent_storm=False, upcoming_storm=None)
+
+    note = AmberAdvisor().suggest(weather, _DAYTIME_LOW_TIDE)
+
+    assert "storm forecast" not in note.lower()

@@ -1,18 +1,24 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import httpx
 
 from romo_bot.models import WeatherForecast
-from romo_bot.weather import bucket_day_parts, had_recent_onshore_storm
+from romo_bot.weather import bucket_day_parts, had_recent_onshore_storm, next_onshore_storm
 
 FORECAST_API_URL = "https://api.open-meteo.com/v1/forecast"
 
 # How many days back to look for a storm that could have loosened amber
 # from the seabed (see weather.had_recent_onshore_storm).
 _PAST_DAYS_FOR_STORM_CHECK = 3
+# Today + tomorrow (fully reported) plus a few more days of just wind, to
+# spot an upcoming onshore storm worth planning around
+# (see weather.next_onshore_storm). Open-Meteo's own forecast skill drops
+# off well before this horizon, so this is a heads-up, not a promise.
+_FORECAST_DAYS_TOTAL = 7
 
 
 class OpenMeteoClientError(RuntimeError):
@@ -21,8 +27,8 @@ class OpenMeteoClientError(RuntimeError):
 
 class OpenMeteoWeatherClient:
     """Fetches today's and tomorrow's weather (by day part) from Open-Meteo's
-    Forecast API, plus the past few days' wind (for the amber-hunting storm
-    check).
+    Forecast API, plus wind for the days before (recent-storm check) and
+    after (upcoming-storm heads-up) for the amber-hunting outlook.
     """
 
     def __init__(
@@ -50,7 +56,7 @@ class OpenMeteoWeatherClient:
                     "wind_speed_10m_max,wind_direction_10m_dominant"
                 ),
                 "timezone": self._timezone,
-                "forecast_days": 2,
+                "forecast_days": _FORECAST_DAYS_TOTAL,
                 "past_days": _PAST_DAYS_FOR_STORM_CHECK,
             },
         )
@@ -60,12 +66,15 @@ class OpenMeteoWeatherClient:
             raise OpenMeteoClientError(f"Forecast API request failed: {exc}") from exc
 
         try:
-            return self._parse_response(response.json())
+            today_date = datetime.now(ZoneInfo(self._timezone)).date()
+            return self._parse_response(response.json(), today_date)
         except (KeyError, TypeError, ValueError, IndexError) as exc:
             raise OpenMeteoClientError(f"Unexpected forecast API response shape: {exc}") from exc
 
     @staticmethod
-    def _parse_response(payload: dict[str, Any]) -> tuple[WeatherForecast, WeatherForecast]:
+    def _parse_response(
+        payload: dict[str, Any], today_date: date
+    ) -> tuple[WeatherForecast, WeatherForecast]:
         hourly = payload["hourly"]
         all_timestamps = [datetime.fromisoformat(t) for t in hourly["time"]]
         all_temperatures = [float(t) for t in hourly["temperature_2m"]]
@@ -78,10 +87,18 @@ class OpenMeteoWeatherClient:
         temperature_mins = [float(t) for t in daily["temperature_2m_min"]]
         temperature_maxs = [float(t) for t in daily["temperature_2m_max"]]
 
-        # past_days puts earlier days first, forecast days last -- the two
-        # latest dates present are today and tomorrow.
-        sorted_dates = sorted(daily_dates)
-        today_date, tomorrow_date = sorted_dates[-2], sorted_dates[-1]
+        # today_date is identified independently from wall-clock time
+        # (matching the requested timezone) rather than by array position
+        # -- robust regardless of exactly how past_days/forecast_days line
+        # up, and keeps this method pure/testable given a fixed date.
+        tomorrow_date = today_date + timedelta(days=1)
+
+        future_indices = [i for i, d in enumerate(daily_dates) if d > tomorrow_date]
+        upcoming_storm_date = next_onshore_storm(
+            [daily_dates[i] for i in future_indices],
+            [wind_speeds[i] for i in future_indices],
+            [wind_directions[i] for i in future_indices],
+        )
 
         def forecast_for(target_date: date) -> WeatherForecast:
             hour_indices = [i for i, t in enumerate(all_timestamps) if t.date() == target_date]
@@ -104,6 +121,7 @@ class OpenMeteoWeatherClient:
                     [wind_speeds[i] for i in past_indices],
                     [wind_directions[i] for i in past_indices],
                 ),
+                upcoming_storm_date=upcoming_storm_date,
             )
 
         return forecast_for(today_date), forecast_for(tomorrow_date)

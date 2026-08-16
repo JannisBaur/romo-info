@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 
 import pytest
 
-from romo_bot.weather import bucket_day_parts, had_recent_onshore_storm
+from romo_bot.weather import bucket_day_parts, had_recent_onshore_storm, next_onshore_storm
 
 
 def _hourly_range(start_hour: int, end_hour: int) -> list[datetime]:
@@ -88,3 +88,28 @@ def test_no_days_means_no_storm() -> None:
 def test_recent_onshore_storm_mismatched_lengths_raise_value_error() -> None:
     with pytest.raises(ValueError, match="same length"):
         had_recent_onshore_storm([50.0, 10.0], [250.0])
+
+
+def test_next_onshore_storm_finds_earliest_qualifying_date() -> None:
+    dates = [date(2026, 8, 18), date(2026, 8, 19), date(2026, 8, 20)]
+    speeds = [10.0, 50.0, 55.0]  # both the 19th and 20th qualify
+    directions = [90.0, 250.0, 260.0]
+
+    assert next_onshore_storm(dates, speeds, directions) == date(2026, 8, 19)
+
+
+def test_next_onshore_storm_returns_none_when_nothing_qualifies() -> None:
+    dates = [date(2026, 8, 18), date(2026, 8, 19)]
+    speeds = [10.0, 12.0]
+    directions = [90.0, 90.0]
+
+    assert next_onshore_storm(dates, speeds, directions) is None
+
+
+def test_next_onshore_storm_empty_input_returns_none() -> None:
+    assert next_onshore_storm([], [], []) is None
+
+
+def test_next_onshore_storm_mismatched_lengths_raise_value_error() -> None:
+    with pytest.raises(ValueError, match="same length"):
+        next_onshore_storm([date(2026, 8, 18)], [50.0, 10.0], [250.0])

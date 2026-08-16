@@ -26,6 +26,7 @@ def _weather(*, storm: bool = True) -> WeatherForecast:
         wind_speed_max_kmh=22.0,
         wind_direction_deg=270.0,
         recent_onshore_storm=storm,
+        upcoming_storm_date=None,
     )
 
 
@@ -128,6 +129,7 @@ def test_missing_weather_data_shows_fallback_message() -> None:
             wind_speed_max_kmh=0.0,
             wind_direction_deg=0.0,
             recent_onshore_storm=False,
+            upcoming_storm_date=None,
         ),
         amber_note=today.amber_note,
     )
