@@ -56,7 +56,7 @@ report.
 on how amber actually reaches Denmark's North Sea coast: a storm (onshore,
 classically from the SW) loosens it from the seabed first, then it washes
 ashore during the *calmer* weather that follows, easiest to spot on the
-beach exposed by the falling tide. So the bot checks the past 3 days for a
+beach exposed by the falling tide. So it checks the past 3 days for a
 strong onshore blow, not just today's wind — a same-day-only check would
 get this backwards. No AI/LLM call involved — this is domain knowledge
 expressed as a plain, tested, free rule, not a judgment call that needs an
@@ -80,13 +80,17 @@ of which day's section you're reading.
 
 ## Setup
 
-1. In the repo's **Settings → Pages**, set **Source** to **GitHub Actions**.
-2. In the **Actions** tab, open **Daily Rømø report** → **Run workflow** to
+1. Make the repository **public**. On GitHub Free, Pages only publishes
+   from public repositories; private-repo Pages needs Pro or higher. (The
+   published page is publicly reachable either way — the plan only decides
+   whether the *source* may stay private.)
+2. In the repo's **Settings → Pages**, set **Source** to **GitHub Actions**.
+3. In the **Actions** tab, open **Daily Rømø report** → **Run workflow** to
    trigger it by hand and confirm the page builds and deploys.
-3. The published URL appears in the workflow run summary (and under
+4. The published URL appears in the workflow run summary (and under
    Settings → Pages). That's the link to share.
 
-That's the whole setup — no pairing, no secrets, no local commands.
+That's the whole setup — no accounts to link, no secrets, no local commands.
 
 ### Adjusting the schedule or location
 
@@ -153,12 +157,3 @@ poetry run python -m romo_info && open public/index.html
 - **Escaping**: `ReportFormatter` HTML-escapes everything that comes from
   the data sources, so a stray `<` or `&` in an API response can't break
   (or inject into) the page.
-
-### Previously
-
-This bot used to send the report as a WhatsApp message via
-[neonize](https://github.com/krypton-byte/neonize), an unofficial client
-library. That was dropped in favour of a Pages site: unofficial WhatsApp
-clients risk getting the linked number flagged, and the setup needed a
-paired session, an encrypted session file committed to the repo, and two
-repository secrets. The Pages version needs none of that.
