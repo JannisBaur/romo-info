@@ -37,6 +37,11 @@ station-calibrated prediction, matches official sources closely, and has
 zero runtime network dependency for tides — but it **only covers one
 calendar year**; see "Refreshing the tide table" below.
 
+**Weather** is split into Morning / Afternoon / Evening (`romo_bot/weather.py`
+buckets Open-Meteo's hourly data into those windows) rather than one blended
+daily summary, since "sunny morning, rain later" is a lot more actionable
+than a single averaged line.
+
 **Amber-hunting outlook** is a small deterministic rule (`romo_bot/amber.py`):
 strong wind onshore (SW through W to NW, since Rømø's beach faces west)
 washes amber ashore, and it's easiest to spot on the beach exposed around
@@ -215,9 +220,10 @@ All four run in CI (`.github/workflows/ci.yml`) on every push/PR to `main`.
   adding a new data source or sender means writing a new class, not editing
   the service (open/closed).
 - **Pure core**: `romo_bot.tide.find_tide_extremes`, `romo_bot.clients.dmi_tide.parse_table`
-  /`extremes_for_date`, and `romo_bot.amber.AmberAdvisor` are all deterministic
-  (no I/O, no wall-clock passed in explicitly where it matters) — cheap to
-  test exhaustively with fixed inputs, no network or mocking required.
+  /`extremes_for_date`, `romo_bot.weather.bucket_day_parts`, and
+  `romo_bot.amber.AmberAdvisor` are all deterministic (no I/O, no wall-clock
+  passed in explicitly where it matters) — cheap to test exhaustively with
+  fixed inputs, no network or mocking required.
 - **Isolated boundary**: all `neonize` calls live in
   `romo_bot/clients/whatsapp.py`. `neonize` ships no type stubs, so it's the
   one module where mypy treats the library as `Any` — everything else is

@@ -23,8 +23,15 @@ class TideForecast:
 
 
 @dataclass(frozen=True, slots=True)
-class WeatherForecast:
+class DayPartForecast:
+    label: str
     summary: str
+    temperature_c: float
+
+
+@dataclass(frozen=True, slots=True)
+class WeatherForecast:
+    day_parts: tuple[DayPartForecast, ...]
     temperature_min_c: float
     temperature_max_c: float
     wind_speed_max_kmh: float

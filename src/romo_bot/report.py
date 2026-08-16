@@ -3,6 +3,7 @@ from __future__ import annotations
 from romo_bot.models import DailyReport, TideDirection
 
 _ARROW = {TideDirection.HIGH: "⬆️ High", TideDirection.LOW: "⬇️ Low"}
+_DAY_PART_EMOJI = {"Morning": "\U0001f305", "Afternoon": "☀️", "Evening": "\U0001f306"}
 
 
 class ReportFormatter:
@@ -18,8 +19,7 @@ class ReportFormatter:
             *self._format_tide_lines(report),
             "",
             "*Weather:*",
-            f"{report.weather.summary}, "
-            f"{report.weather.temperature_min_c:.0f}-{report.weather.temperature_max_c:.0f}°C",
+            *self._format_weather_lines(report),
             f"\U0001f4a8 Wind up to {report.weather.wind_speed_max_kmh:.0f} km/h",
             "",
             "*Amber hunting:*",
@@ -36,4 +36,14 @@ class ReportFormatter:
         return [
             f"{_ARROW[extreme.direction]} tide ~{extreme.at:%H:%M} ({extreme.height_m:.2f} m)"
             for extreme in report.tide.extremes
+        ]
+
+    @staticmethod
+    def _format_weather_lines(report: DailyReport) -> list[str]:
+        if not report.weather.day_parts:
+            return ["Weather data unavailable today."]
+        return [
+            f"{_DAY_PART_EMOJI.get(part.label, '')} {part.label}: {part.summary}, "
+            f"{part.temperature_c:.0f}°C"
+            for part in report.weather.day_parts
         ]

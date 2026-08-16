@@ -3,13 +3,13 @@ from __future__ import annotations
 import pytest
 
 from romo_bot.amber import AmberAdvisor
-from romo_bot.models import TideForecast, WeatherForecast
+from romo_bot.models import DayPartForecast, TideForecast, WeatherForecast
 from romo_bot.report import ReportFormatter
 from romo_bot.service import DailyReportService
 from tests.fakes import FailingMessageSender, FakeMessageSender, FakeTideSource, FakeWeatherSource
 
 _WEATHER = WeatherForecast(
-    summary="Sunny",
+    day_parts=(DayPartForecast(label="Morning", summary="Sunny", temperature_c=12.0),),
     temperature_min_c=10.0,
     temperature_max_c=15.0,
     wind_speed_max_kmh=10.0,

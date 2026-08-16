@@ -15,7 +15,7 @@ _NO_TIDE = TideForecast(extremes=())
 
 def _weather(*, speed_kmh: float, direction_deg: float) -> WeatherForecast:
     return WeatherForecast(
-        summary="Overcast",
+        day_parts=(),
         temperature_min_c=14.0,
         temperature_max_c=18.0,
         wind_speed_max_kmh=speed_kmh,

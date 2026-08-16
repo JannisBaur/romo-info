@@ -1,33 +1,13 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 import httpx
 
 from romo_bot.models import WeatherForecast
+from romo_bot.weather import bucket_day_parts
 
 FORECAST_API_URL = "https://api.open-meteo.com/v1/forecast"
-
-# Open-Meteo's weathercode -> short human summary (WMO code table, common subset).
-_WEATHER_CODE_SUMMARIES: dict[int, str] = {
-    0: "Clear sky",
-    1: "Mostly clear",
-    2: "Partly cloudy",
-    3: "Overcast",
-    45: "Fog",
-    48: "Depositing rime fog",
-    51: "Light drizzle",
-    53: "Moderate drizzle",
-    55: "Dense drizzle",
-    61: "Slight rain",
-    63: "Moderate rain",
-    65: "Heavy rain",
-    71: "Slight snow",
-    73: "Moderate snow",
-    75: "Heavy snow",
-    80: "Rain showers",
-    81: "Moderate rain showers",
-    82: "Violent rain showers",
-    95: "Thunderstorm",
-}
 
 
 class OpenMeteoClientError(RuntimeError):
@@ -35,7 +15,7 @@ class OpenMeteoClientError(RuntimeError):
 
 
 class OpenMeteoWeatherClient:
-    """Fetches today's weather summary from Open-Meteo's Forecast API."""
+    """Fetches today's weather (by day part) from Open-Meteo's Forecast API."""
 
     def __init__(
         self,
@@ -56,8 +36,9 @@ class OpenMeteoWeatherClient:
             params={
                 "latitude": self._latitude,
                 "longitude": self._longitude,
+                "hourly": "temperature_2m,weathercode",
                 "daily": (
-                    "weathercode,temperature_2m_max,temperature_2m_min,"
+                    "temperature_2m_max,temperature_2m_min,"
                     "wind_speed_10m_max,wind_direction_10m_dominant"
                 ),
                 "timezone": self._timezone,
@@ -70,10 +51,16 @@ class OpenMeteoWeatherClient:
             raise OpenMeteoClientError(f"Forecast API request failed: {exc}") from exc
 
         try:
-            daily = response.json()["daily"]
-            code = int(daily["weathercode"][0])
+            payload = response.json()
+            hourly = payload["hourly"]
+            timestamps = [datetime.fromisoformat(t) for t in hourly["time"]]
+            temperatures_c = [float(t) for t in hourly["temperature_2m"]]
+            weather_codes = [int(c) for c in hourly["weathercode"]]
+            day_parts = bucket_day_parts(timestamps, temperatures_c, weather_codes)
+
+            daily = payload["daily"]
             return WeatherForecast(
-                summary=_WEATHER_CODE_SUMMARIES.get(code, "Unknown conditions"),
+                day_parts=day_parts,
                 temperature_min_c=float(daily["temperature_2m_min"][0]),
                 temperature_max_c=float(daily["temperature_2m_max"][0]),
                 wind_speed_max_kmh=float(daily["wind_speed_10m_max"][0]),
