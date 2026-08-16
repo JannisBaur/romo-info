@@ -68,7 +68,10 @@ into WhatsApp, which works on a single device.
    ```
 
 3. Pair by phone number (replace with your own number, country code + digits
-   only, no `+`/spaces/dashes — e.g. `4512345678` for Denmark):
+   only, no `+`/spaces/dashes — e.g. `4512345678` for Denmark). If your
+   country uses a trunk prefix (e.g. Germany: `0176 12345678`), drop the
+   leading `0` once the country code is prepended → `491761234567`, not
+   `490176...`:
 
    ```bash
    WHATSAPP_PHONE_NUMBER=4512345678 poetry run python scripts/pair_by_phone.py

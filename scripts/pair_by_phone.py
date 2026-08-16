@@ -13,8 +13,10 @@ WhatsApp's domains.
 Usage:
     WHATSAPP_PHONE_NUMBER=4512345678 poetry run python scripts/pair_by_phone.py
 
-WHATSAPP_PHONE_NUMBER: your WhatsApp number with country code, digits only
-(no "+", spaces, or dashes) -- e.g. 4512345678 for a Danish number.
+WHATSAPP_PHONE_NUMBER: your WhatsApp number with country code, digits only,
+no "+", spaces, or dashes -- e.g. 4512345678 for a Danish number. If your
+country uses a trunk prefix (e.g. Germany: 0176 12345678), drop the leading
+0 once the country code is prepended -> 491761234567, not 490176...
 """
 
 from __future__ import annotations
@@ -50,6 +52,11 @@ def main() -> None:
     phone = os.environ.get("WHATSAPP_PHONE_NUMBER")
     if not phone:
         sys.exit("Set WHATSAPP_PHONE_NUMBER (country code + number, digits only) first.")
+    if phone.startswith("0"):
+        sys.exit(
+            "WHATSAPP_PHONE_NUMBER must not start with 0 -- that's a trunk prefix, "
+            "drop it once the country code is prepended (e.g. German 0176... -> 49176...)."
+        )
 
     session_db_path = Path(os.environ.get("SESSION_DB_PATH", str(DEFAULT_SESSION_DB_PATH)))
     session_db_path.parent.mkdir(parents=True, exist_ok=True)
