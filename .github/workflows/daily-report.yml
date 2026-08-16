@@ -1,0 +1,35 @@
+name: Daily Rømø report
+
+on:
+  schedule:
+    # 05:00 UTC = ~06:00-07:00 in Europe/Copenhagen depending on DST.
+    - cron: "0 5 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  send-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: pipx install poetry
+
+      - name: Install dependencies
+        run: poetry install --no-interaction --only main
+
+      - name: Restore WhatsApp session
+        run: |
+          mkdir -p data
+          echo "${{ secrets.WHATSAPP_SESSION_DB_B64 }}" | base64 -d > data/session.db
+
+      - name: Send report
+        env:
+          WHATSAPP_GROUP_JID: ${{ secrets.WHATSAPP_GROUP_JID }}
+          SESSION_DB_PATH: data/session.db
+        run: poetry run python -m romo_bot

@@ -1,0 +1,42 @@
+from __future__ import annotations
+
+import logging
+import sys
+
+from romo_bot.clients.open_meteo import OpenMeteoTideClient, OpenMeteoWeatherClient
+from romo_bot.clients.whatsapp import NeonizeMessageSender
+from romo_bot.config import ConfigError, Settings
+from romo_bot.report import ReportFormatter
+from romo_bot.service import DailyReportService
+
+
+def main() -> int:
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+
+    try:
+        settings = Settings.from_env()
+    except ConfigError:
+        logging.exception("Configuration error")
+        return 1
+
+    service = DailyReportService(
+        tide_source=OpenMeteoTideClient(settings.latitude, settings.longitude, settings.timezone),
+        weather_source=OpenMeteoWeatherClient(
+            settings.latitude, settings.longitude, settings.timezone
+        ),
+        sender=NeonizeMessageSender(settings.session_db_path),
+        formatter=ReportFormatter(),
+        group_jid=settings.whatsapp_group_jid,
+        timezone=settings.timezone,
+    )
+
+    try:
+        service.run()
+    except Exception:
+        logging.exception("Failed to send daily report")
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
