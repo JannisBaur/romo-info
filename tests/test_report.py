@@ -253,4 +253,6 @@ def test_page_references_the_mascot_image() -> None:
     # Relative src -- FileReportPublisher copies the file into the same
     # directory as index.html.
     assert 'src="dog.jpg"' in html
-    assert "alt=" in html
+    # Empty alt marks it decorative, so screen readers skip it silently
+    # rather than reading out the filename.
+    assert 'alt=""' in html

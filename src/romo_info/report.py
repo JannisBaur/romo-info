@@ -22,12 +22,12 @@ h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
 .updated { color: #767676; margin-top: 0; font-size: 0.9rem; }
 .mascot {
   display: block;
-  width: 140px;
-  height: 140px;
-  max-width: 60%;
+  width: 100px;
+  height: 100px;
+  max-width: 40%;
   object-fit: cover;
   border-radius: 50%;
-  margin: 0 auto 1rem;
+  margin: 0 auto 0.75rem;
 }
 .day { border: 1px solid #80808040; border-radius: 12px; padding: 1rem 1.25rem; margin: 1rem 0; }
 .day h2 { margin-top: 0; font-size: 1.15rem; }
@@ -42,7 +42,8 @@ h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
 .wind { color: #767676; font-size: 0.9rem; }
 .amber { margin-top: 0.75rem; }
 .outlook { margin-top: 1.5rem; }
-footer { margin-top: 2rem; color: #767676; font-size: 0.85rem; }
+footer { margin-top: 2rem; color: #767676; font-size: 0.85rem; text-align: center; }
+footer p { margin: 0; }
 """
 
 
@@ -67,7 +68,6 @@ class ReportFormatter:
 </head>
 <body>
 <main>
-<img class="mascot" src="dog.jpg" width="140" height="140" alt="The dog this page is for">
 <h1>\U0001f30a Rømø tide &amp; weather</h1>
 <p class="updated">Updated {updated}</p>
 {days_html}
@@ -75,7 +75,10 @@ class ReportFormatter:
 <h2>Amber storm outlook</h2>
 <p>{outlook}</p>
 </section>
-<footer>Generated automatically &middot; data: DMI, open-meteo.com</footer>
+<footer>
+<img class="mascot" src="dog.jpg" width="100" height="100" alt="">
+<p>Generated automatically &middot; data: DMI, open-meteo.com</p>
+</footer>
 </main>
 </body>
 </html>
