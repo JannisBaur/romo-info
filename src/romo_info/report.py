@@ -20,6 +20,15 @@ body {
 }
 h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
 .updated { color: #767676; margin-top: 0; font-size: 0.9rem; }
+.mascot {
+  display: block;
+  width: 140px;
+  height: 140px;
+  max-width: 60%;
+  object-fit: cover;
+  border-radius: 50%;
+  margin: 0 auto 1rem;
+}
 .day { border: 1px solid #80808040; border-radius: 12px; padding: 1rem 1.25rem; margin: 1rem 0; }
 .day h2 { margin-top: 0; font-size: 1.15rem; }
 .day h3 {
@@ -58,6 +67,7 @@ class ReportFormatter:
 </head>
 <body>
 <main>
+<img class="mascot" src="dog.jpg" width="140" height="140" alt="The dog this page is for">
 <h1>\U0001f30a Rømø tide &amp; weather</h1>
 <p class="updated">Updated {updated}</p>
 {days_html}

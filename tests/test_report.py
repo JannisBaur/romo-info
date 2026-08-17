@@ -241,6 +241,16 @@ def test_meaningful_rain_chance_is_shown() -> None:
 
 
 def test_negligible_rain_chance_is_omitted_as_noise() -> None:
-    # Printing "0% rain" on every dry window would be pure clutter.
+    # Printing "0% rain" on every dry window would be pure clutter. Assert
+    # on the rain marker itself rather than a bare "0%", which also matches
+    # CSS such as "max-width: 60%".
     html = ReportFormatter().format(_report())
-    assert "0%" not in html
+    assert "\U0001f327" not in html
+
+
+def test_page_references_the_mascot_image() -> None:
+    html = ReportFormatter().format(_report())
+    # Relative src -- FileReportPublisher copies the file into the same
+    # directory as index.html.
+    assert 'src="dog.jpg"' in html
+    assert "alt=" in html
