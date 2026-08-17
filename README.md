@@ -97,9 +97,6 @@ needs. The page updates **twice a day** for this: forecasting tonight's
 cloud from the morning run means a ~15-hour lead time, where the
 late-afternoon run is nearer four and materially more accurate.
 
-Rømø is not a certified Dark Sky Park — that's neighbouring **Mandø** — but
-it has very low light pollution: few residents, no towns.
-
 ## Setup
 
 1. Make the repository **public**. On GitHub Free, Pages only publishes

@@ -41,25 +41,6 @@ properly. The outlook above is only a rule of thumb built from wind and tide.</l
 <a href="https://ravvejr.dk/lakolk-strand/">Ravvejr on Lakolk</a></p>
 </section>"""
 
-_STARGAZING_TIPS = """<section class="card tips">
-<h2>Where to watch the sky</h2>
-<ul>
-<li>From <strong>Toftum</strong>, walk north or out towards the dike — a few minutes away
-from the houses is enough to get streetlights out of your eyes.</li>
-<li>Look <strong>north and west</strong>. Lakolk's lights sit to the south-west and List on
-Sylt glows to the south, so the darkest horizon is away from both.</li>
-<li>Give your eyes <strong>20 minutes</strong> to adapt and don't check your phone — one
-glance at a bright screen resets it. Red light preserves night vision.</li>
-<li>Rømø has very low light pollution: few residents and no towns. The Wadden Sea's
-certified <a href="https://nationalparkvadehavet.dk/nyheder/2024/marts/mandoe-er-nu-dark-sky-park">Dark
-Sky Park is neighbouring Mandø</a>, not Rømø itself, but the same dark skies carry.</li>
-</ul>
-<p class="sources">Sources:
-<a href="https://nationalparkvadehavet.dk/nyheder/2024/marts/mandoe-er-nu-dark-sky-park">Nationalpark
-Vadehavet</a>,
-<a href="https://www.visitdenmark.dk/danmark/oplevelser/natur/beaches/se-paa-stjerner">VisitDenmark</a></p>
-</section>"""
-
 _CSS = """
 :root { color-scheme: light dark; }
 body {
@@ -140,7 +121,6 @@ class ReportFormatter:
 <p>{stargazing}</p>
 <p class="requested">Requested by Pia \U0001f31f</p>
 </section>
-{_STARGAZING_TIPS}
 {_WHERE_TO_LOOK}
 <footer>
 <img class="mascot" src="dog.jpg" width="100" height="100" alt="">
