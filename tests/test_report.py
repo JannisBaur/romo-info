@@ -186,7 +186,7 @@ def test_days_and_outlook_share_the_card_styling() -> None:
 def test_where_to_look_section_is_present_with_sources() -> None:
     # Static local knowledge, but it makes claims, so it has to cite them.
     html = ReportFormatter().format(_report())
-    assert "Where to look" in html
+    assert "Where to find amber" in html
     assert "Lakolk" in html
     assert "ravpindelag" in html
     assert "Sources:" in html
@@ -206,3 +206,11 @@ def test_page_credits_ravvejr_rather_than_restating_their_forecast() -> None:
     # republish it.
     html = ReportFormatter().format(_report())
     assert "ravvejr.dk/lakolk-strand/" in html
+
+
+def test_amber_sections_are_grouped_before_the_sky_section() -> None:
+    # "Where to find amber" sitting after Stargazing read as sky advice and
+    # split the amber content in two.
+    html = ReportFormatter().format(_report())
+    assert html.index("Amber storm outlook") < html.index("Where to find amber")
+    assert html.index("Where to find amber") < html.index("Stargazing tonight")

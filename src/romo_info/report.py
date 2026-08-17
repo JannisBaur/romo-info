@@ -16,7 +16,7 @@ _ARROW = {TideDirection.HIGH: "⬆️ High", TideDirection.LOW: "⬇️ Low"}
 # Fixed local knowledge -- it doesn't change day to day, so it's baked in
 # rather than fetched. Sourced rather than folklore: see the links below.
 _WHERE_TO_LOOK = """<section class="card tips">
-<h2>Where to look</h2>
+<h2>Where to find amber</h2>
 <ul>
 <li><strong>Lakolk</strong>, or the northern end of Sønderstrand — that stretch faces
 due west, so it takes the west and north-westerly storms most squarely. Sønderstrand's
@@ -116,12 +116,12 @@ class ReportFormatter:
 <h2>Amber storm outlook</h2>
 <p>{outlook}</p>
 </section>
+{_WHERE_TO_LOOK}
 <section class="card stars">
 <h2>Stargazing tonight</h2>
 <p>{stargazing}</p>
 <p class="requested">Requested by Pia \U0001f31f</p>
 </section>
-{_WHERE_TO_LOOK}
 <footer>
 <img class="mascot" src="dog.jpg" width="100" height="100" alt="">
 <p>Generated automatically &middot; data: DMI, open-meteo.com</p>
