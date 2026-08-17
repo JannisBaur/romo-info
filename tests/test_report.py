@@ -188,3 +188,18 @@ def test_where_to_look_section_is_present_with_sources() -> None:
     assert "ravpindelag" in html
     assert "Sources:" in html
     assert "ravvejr.dk" in html
+
+
+def test_page_carries_a_safety_and_affiliation_disclaimer() -> None:
+    # The Wadden Sea flats flood fast, so the page must not read as
+    # something to plan a walk out on.
+    html = ReportFormatter().format(_report())
+    assert "not a safety" in html
+    assert "not affiliated" in html
+
+
+def test_page_credits_ravvejr_rather_than_restating_their_forecast() -> None:
+    # Their scored amber probability is their product -- link to it, don't
+    # republish it.
+    html = ReportFormatter().format(_report())
+    assert "ravvejr.dk/lakolk-strand/" in html

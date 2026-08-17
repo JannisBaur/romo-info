@@ -30,6 +30,9 @@ amber-stick layer. Find that band and you're searching the right stripe of beach
 <li>Diving gulls mark the same debris, for the same reason.</li>
 <li>Best on the <strong>second falling tide after a storm</strong>, and better in winter
 — the storms are bigger, and amber floats more readily in cold, denser water.</li>
+<li>For an actual scored amber forecast for this beach, check
+<a href="https://ravvejr.dk/lakolk-strand/">Ravvejr's Lakolk page</a> — they model it
+properly. The outlook above is only a rule of thumb built from wind and tide.</li>
 </ul>
 <p class="sources">Sources:
 <a href="https://ravvejr.dk/guide-til-at-finde-rav/">Ravvejr</a>,
@@ -76,6 +79,7 @@ h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
 .tips ul { margin: 0; padding-left: 1.1rem; }
 .tips li { margin-bottom: 0.5rem; }
 .sources { font-size: 0.8rem; color: #767676; margin-top: 0.9rem; }
+.disclaimer { font-size: 0.8rem; margin-top: 0.75rem; text-align: left; }
 .amber { margin-top: 0.75rem; }
 footer { margin-top: 2rem; color: #767676; font-size: 0.85rem; text-align: center; }
 footer p { margin: 0; }
@@ -114,6 +118,11 @@ class ReportFormatter:
 <footer>
 <img class="mascot" src="dog.jpg" width="100" height="100" alt="">
 <p>Generated automatically &middot; data: DMI, open-meteo.com</p>
+<p class="disclaimer">Personal hobby page, not affiliated with DMI, Open-Meteo or
+Ravvejr. Tide and wind figures are model predictions and this is <strong>not a safety
+tool</strong> — the Wadden Sea flats flood quickly and cut off routes back, so check
+official tide tables and local warnings before walking out. The amber note is a rule of
+thumb, not a forecast.</p>
 </footer>
 </main>
 </body>
