@@ -14,6 +14,40 @@ _STORM_WIND_KMH = 58.0
 _ONSHORE_MIN_DEG = 202.5  # SW
 _ONSHORE_MAX_DEG = 337.5  # NW -- Rømø's beach faces roughly west
 
+_COMPASS_POINTS = (
+    "N",
+    "NNE",
+    "NE",
+    "ENE",
+    "E",
+    "ESE",
+    "SE",
+    "SSE",
+    "S",
+    "SSW",
+    "SW",
+    "WSW",
+    "W",
+    "WNW",
+    "NW",
+    "NNW",
+)
+
+
+def compass_point(degrees: float) -> str:
+    """Bearing as a 16-point compass label, e.g. 250 -> "WSW"."""
+    return _COMPASS_POINTS[round(degrees / 22.5) % 16]
+
+
+def is_onshore(degrees: float) -> bool:
+    """Whether wind from this bearing blows in off the sea at Rømø.
+
+    Shares its bounds with the storm checks above, so the direction shown
+    on the page can't drift out of step with the direction the amber rules
+    actually apply.
+    """
+    return _ONSHORE_MIN_DEG <= degrees <= _ONSHORE_MAX_DEG
+
 
 def had_recent_onshore_storm(
     daily_wind_speeds_kmh: Sequence[float], daily_wind_directions_deg: Sequence[float]

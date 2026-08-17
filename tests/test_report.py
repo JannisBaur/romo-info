@@ -16,6 +16,7 @@ from romo_info.report import ReportFormatter
 def _weather(*, storm: bool = True) -> WeatherForecast:
     return WeatherForecast(
         wind_speed_max_kmh=22.0,
+        wind_direction_deg=250.0,
         recent_onshore_storm=storm,
         recent_storm_lookback_days=3,
         recent_strongest_onshore_kmh=None,
@@ -159,3 +160,12 @@ def test_page_references_the_mascot_image() -> None:
     # Empty alt marks it decorative, so screen readers skip it silently
     # rather than falling back to announcing the filename.
     assert 'alt=""' in html
+
+
+def test_wind_direction_and_shore_are_reported() -> None:
+    # The bearing alone doesn't tell you what matters for amber, so the
+    # page states onshore/offshore outright.
+    html = ReportFormatter().format(_report())
+    assert "WSW" in html
+    assert "250°" in html
+    assert "onshore" in html

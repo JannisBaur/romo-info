@@ -2,7 +2,14 @@ from __future__ import annotations
 
 from html import escape
 
-from romo_info.models import DailyReport, DayForecast, TideDirection, TideForecast
+from romo_info.models import (
+    DailyReport,
+    DayForecast,
+    TideDirection,
+    TideForecast,
+    WeatherForecast,
+)
+from romo_info.weather import compass_point, is_onshore
 
 _ARROW = {TideDirection.HIGH: "⬆️ High", TideDirection.LOW: "⬇️ Low"}
 
@@ -88,10 +95,21 @@ class ReportFormatter:
             f"<h3>Tides</h3>\n"
             f"<ul>{self._format_tide_lines(day.tide)}</ul>\n"
             f"<h3>Wind</h3>\n"
-            f'<p class="wind">\U0001f4a8 Up to {day.weather.wind_speed_max_kmh:.0f} km/h</p>\n'
+            f'<p class="wind">{self._format_wind(day.weather)}</p>\n'
             f"<h3>Amber hunting</h3>\n"
             f'<p class="amber">{escape(day.amber_note)}</p>\n'
             f"</section>"
+        )
+
+    @staticmethod
+    def _format_wind(weather: WeatherForecast) -> str:
+        # Onshore vs offshore is the part that matters for amber, so say it
+        # outright rather than leaving the reader to decode the bearing.
+        shore = "onshore" if is_onshore(weather.wind_direction_deg) else "offshore"
+        return (
+            f"\U0001f4a8 Up to {weather.wind_speed_max_kmh:.0f} km/h from "
+            f"{compass_point(weather.wind_direction_deg)} "
+            f"({weather.wind_direction_deg:.0f}°) — {shore}"
         )
 
     @staticmethod

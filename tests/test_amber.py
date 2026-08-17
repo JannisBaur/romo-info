@@ -36,9 +36,11 @@ def _weather(
     recent_storm: bool,
     lookback_days: int = 3,
     strongest_onshore_kmh: float | None = None,
+    direction_deg: float = 270.0,
 ) -> WeatherForecast:
     return WeatherForecast(
         wind_speed_max_kmh=speed_kmh,
+        wind_direction_deg=direction_deg,
         recent_onshore_storm=recent_storm,
         recent_storm_lookback_days=lookback_days,
         recent_strongest_onshore_kmh=strongest_onshore_kmh,

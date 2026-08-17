@@ -141,6 +141,7 @@ class OpenMeteoWeatherClient:
             strongest_recent = strongest_onshore_day(past_dates, past_speeds, past_directions)
             return WeatherForecast(
                 wind_speed_max_kmh=wind_speeds[day_index],
+                wind_direction_deg=wind_directions[day_index],
                 recent_onshore_storm=had_recent_onshore_storm(past_speeds, past_directions),
                 recent_storm_lookback_days=len(past_indices),
                 recent_strongest_onshore_kmh=(strongest_recent[1] if strongest_recent else None),

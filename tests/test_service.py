@@ -17,12 +17,14 @@ from tests.fakes import (
 
 _TODAY_WEATHER = WeatherForecast(
     wind_speed_max_kmh=10.0,
+    wind_direction_deg=270.0,
     recent_onshore_storm=True,
     recent_storm_lookback_days=3,
     recent_strongest_onshore_kmh=60.0,
 )
 _TOMORROW_WEATHER = WeatherForecast(
     wind_speed_max_kmh=15.0,
+    wind_direction_deg=90.0,
     recent_onshore_storm=False,
     recent_storm_lookback_days=4,
     recent_strongest_onshore_kmh=None,

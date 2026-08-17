@@ -34,6 +34,10 @@ class WeatherForecast:
     """
 
     wind_speed_max_kmh: float
+    # Dominant direction the wind blows *from*, in degrees. Amber-relevant
+    # in its own right: an onshore blow pushes loosened amber towards the
+    # beach, an offshore one of the same strength does not.
+    wind_direction_deg: float
     recent_onshore_storm: bool
     recent_storm_lookback_days: int
     # The strongest onshore-direction day in the lookback window, even if it

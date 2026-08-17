@@ -50,8 +50,12 @@ already has a weather app that does them better, and compressing a
 six-hour window into one summary kept overstating things — first by
 labelling a mostly-clear afternoon after its single drizzliest hour, then
 by reporting that window's peak chance of rain as if it applied all
-afternoon. Wind stays because it drives the amber outlook and decides
-whether the beach is worth the trip. Only daily wind is fetched, so no
+afternoon. Wind stays in full -- speed, bearing, and whether that bearing is
+onshore -- because it is amber information: an onshore blow pushes
+loosened amber towards the beach where an offshore one of the same
+strength does not. `is_onshore` shares its bounds with the storm checks,
+so the direction shown can't drift out of step with the rules the amber
+advice applies. Only daily wind is fetched, so no
 hourly series is requested at all. Transient network failures are retried
 (3 attempts with backoff) so one dropped connection doesn't cost the day's
 report.
