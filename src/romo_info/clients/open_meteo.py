@@ -145,6 +145,7 @@ class OpenMeteoWeatherClient:
                 recent_onshore_storm=had_recent_onshore_storm(past_speeds, past_directions),
                 recent_storm_lookback_days=len(past_indices),
                 recent_strongest_onshore_kmh=(strongest_recent[1] if strongest_recent else None),
+                recent_strongest_onshore_date=(strongest_recent[0] if strongest_recent else None),
             )
 
         reported = tuple(

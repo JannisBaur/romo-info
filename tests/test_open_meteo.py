@@ -259,3 +259,11 @@ def test_fetch_weather_forecast_raises_on_malformed_payload() -> None:
 
     with pytest.raises(OpenMeteoClientError):
         client.fetch_weather_forecast(1)
+
+
+def test_recent_strongest_onshore_day_carries_its_date() -> None:
+    # The 16th is the only onshore day in tomorrow's past window.
+    _today, tomorrow, _outlook = _parse(_SUCCESS_PAYLOAD)
+
+    assert tomorrow.recent_strongest_onshore_kmh == 60.0
+    assert tomorrow.recent_strongest_onshore_date == date(2026, 8, 16)

@@ -39,10 +39,17 @@ class AmberAdvisor:
                 f"({weather.wind_speed_max_kmh:.0f} km/h) — wait for calmer seas.{low_tide_note}"
             )
         if weather.recent_strongest_onshore_kmh is not None:
+            # Name the day: a blow yesterday and one three days ago mean
+            # quite different things for whether anything is still washing in.
+            when = (
+                f" on {weather.recent_strongest_onshore_date:%a %d %b}"
+                if weather.recent_strongest_onshore_date is not None
+                else ""
+            )
             return (
                 f"No full storm in the past {weather.recent_storm_lookback_days} days, but "
-                f"there was a {weather.recent_strongest_onshore_kmh:.0f} km/h onshore blow — "
-                f"still possible, just less likely.{low_tide_note}"
+                f"there was a {weather.recent_strongest_onshore_kmh:.0f} km/h onshore blow"
+                f"{when} — still possible, just less likely.{low_tide_note}"
             )
         return (
             f"No onshore wind at all in the past {weather.recent_storm_lookback_days} days, "

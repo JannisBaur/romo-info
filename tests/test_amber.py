@@ -36,6 +36,7 @@ def _weather(
     recent_storm: bool,
     lookback_days: int = 3,
     strongest_onshore_kmh: float | None = None,
+    strongest_onshore_date: date | None = None,
     direction_deg: float = 270.0,
 ) -> WeatherForecast:
     return WeatherForecast(
@@ -44,6 +45,7 @@ def _weather(
         recent_onshore_storm=recent_storm,
         recent_storm_lookback_days=lookback_days,
         recent_strongest_onshore_kmh=strongest_onshore_kmh,
+        recent_strongest_onshore_date=strongest_onshore_date,
     )
 
 
@@ -170,3 +172,18 @@ def test_describe_outlook_names_the_date_checked_through_when_nothing_onshore_at
     note = AmberAdvisor.describe_outlook(outlook)
 
     assert "No storm forecast through Sat 22 Aug" in note
+
+
+def test_near_miss_blow_says_which_day_it_was() -> None:
+    # "there was a 32 km/h blow" is not actionable without knowing whether
+    # that was yesterday or three days ago.
+    weather = _weather(
+        speed_kmh=20.0,
+        recent_storm=False,
+        strongest_onshore_kmh=32.0,
+        strongest_onshore_date=date(2026, 8, 15),
+    )
+
+    note = AmberAdvisor().suggest(weather, _DAYTIME_LOW_TIDE)
+
+    assert "32 km/h onshore blow on Sat 15 Aug" in note

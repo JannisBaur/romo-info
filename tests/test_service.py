@@ -21,6 +21,7 @@ _TODAY_WEATHER = WeatherForecast(
     recent_onshore_storm=True,
     recent_storm_lookback_days=3,
     recent_strongest_onshore_kmh=60.0,
+    recent_strongest_onshore_date=None,
 )
 _TOMORROW_WEATHER = WeatherForecast(
     wind_speed_max_kmh=15.0,
@@ -28,6 +29,7 @@ _TOMORROW_WEATHER = WeatherForecast(
     recent_onshore_storm=False,
     recent_storm_lookback_days=4,
     recent_strongest_onshore_kmh=None,
+    recent_strongest_onshore_date=None,
 )
 _OUTLOOK = StormOutlook(
     upcoming_storm_date=date(2026, 8, 19),

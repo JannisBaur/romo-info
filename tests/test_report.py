@@ -20,6 +20,7 @@ def _weather(*, storm: bool = True) -> WeatherForecast:
         recent_onshore_storm=storm,
         recent_storm_lookback_days=3,
         recent_strongest_onshore_kmh=None,
+        recent_strongest_onshore_date=None,
     )
 
 

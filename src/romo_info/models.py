@@ -43,8 +43,11 @@ class WeatherForecast:
     # The strongest onshore-direction day in the lookback window, even if it
     # didn't clear the full "storm" threshold -- None only if there was no
     # onshore wind at all. Lets the amber note mention a near-miss blow
-    # instead of a threshold silently discarding it.
+    # instead of a threshold silently discarding it. The date rides along
+    # because "there was a 32 km/h blow" is not actionable without knowing
+    # whether it was yesterday or three days ago.
     recent_strongest_onshore_kmh: float | None
+    recent_strongest_onshore_date: date | None
 
 
 @dataclass(frozen=True, slots=True)
