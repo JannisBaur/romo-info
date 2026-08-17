@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from romo_info.models import StormOutlook, TideForecast, WeatherForecast
+from romo_info.models import (
+    StargazingForecast,
+    StormOutlook,
+    TideForecast,
+    WeatherForecast,
+)
 
 
 class TideDataSource(Protocol):
@@ -12,9 +17,11 @@ class TideDataSource(Protocol):
 
 
 class WeatherDataSource(Protocol):
-    def fetch_weather_forecast(self, days: int) -> tuple[tuple[WeatherForecast, ...], StormOutlook]:
+    def fetch_weather_forecast(
+        self, days: int
+    ) -> tuple[tuple[WeatherForecast, ...], StormOutlook, StargazingForecast | None]:
         """Returns (`days` consecutive WeatherForecast entries starting
-        today, storm_outlook).
+        today, storm_outlook, tonight's stargazing conditions).
         """
         ...
 

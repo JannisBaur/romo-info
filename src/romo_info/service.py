@@ -9,6 +9,7 @@ from romo_info.amber import AmberAdvisor
 from romo_info.clients.protocols import ReportPublisher, TideDataSource, WeatherDataSource
 from romo_info.models import DailyReport, DayForecast
 from romo_info.report import ReportFormatter
+from romo_info.stargazing import describe as describe_stargazing
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,9 @@ class DailyReportService:
 
     def run(self) -> None:
         tides = self.tide_source.fetch_tide_forecast(self.days_to_report)
-        weathers, storm_outlook = self.weather_source.fetch_weather_forecast(self.days_to_report)
+        weathers, storm_outlook, stargazing = self.weather_source.fetch_weather_forecast(
+            self.days_to_report
+        )
         now = datetime.now(ZoneInfo(self.timezone))
 
         days = tuple(
@@ -61,6 +64,7 @@ class DailyReportService:
             report_date=now,
             days=days,
             storm_outlook_note=self.amber_advisor.describe_outlook(storm_outlook),
+            stargazing_note=describe_stargazing(stargazing),
         )
         html = self.formatter.format(report)
         self.publisher.publish(html)

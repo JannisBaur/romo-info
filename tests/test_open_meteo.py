@@ -22,7 +22,7 @@ _FORECAST_DAYS_TOTAL = _DAYS + 5
 
 
 def _parse(payload: dict[str, Any]) -> tuple[WeatherForecast, WeatherForecast, StormOutlook]:
-    (today, tomorrow), outlook = OpenMeteoWeatherClient._parse_response(
+    (today, tomorrow), outlook, _stars = OpenMeteoWeatherClient._parse_response(
         payload, _TODAY, _DAYS, _FORECAST_DAYS_TOTAL
     )
     return today, tomorrow, outlook
@@ -225,12 +225,12 @@ def test_days_argument_shifts_which_days_count_as_future_outlook() -> None:
         },
     }
 
-    (_today, _tomorrow), outlook_2_days = OpenMeteoWeatherClient._parse_response(
+    (_today, _tomorrow), outlook_2_days, _s2 = OpenMeteoWeatherClient._parse_response(
         payload, date(2026, 8, 16), 2, 2 + 5
     )
     assert outlook_2_days.upcoming_storm_date is None
 
-    (_today_only,), outlook_1_day = OpenMeteoWeatherClient._parse_response(
+    (_today_only,), outlook_1_day, _s1 = OpenMeteoWeatherClient._parse_response(
         payload, date(2026, 8, 16), 1, 1 + 5
     )
     assert outlook_1_day.upcoming_storm_date == date(2026, 8, 17)

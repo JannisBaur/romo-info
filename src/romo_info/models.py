@@ -69,6 +69,23 @@ class StormOutlook:
 
 
 @dataclass(frozen=True, slots=True)
+class StargazingForecast:
+    """Tonight's viewing conditions, sunset through to tomorrow's sunrise.
+
+    Report-wide rather than per-day: "tonight" is one night regardless of
+    how many days the page covers.
+    """
+
+    darkness_from: datetime
+    darkness_to: datetime
+    # None when the hourly data doesn't reach across tonight -- reported as
+    # unavailable rather than silently passed off as a clear sky.
+    cloud_cover_pct: int | None
+    moon_illumination_pct: int
+    moon_phase: str
+
+
+@dataclass(frozen=True, slots=True)
 class DayForecast:
     for_date: date
     label: str
@@ -82,3 +99,4 @@ class DailyReport:
     report_date: datetime
     days: tuple[DayForecast, ...]
     storm_outlook_note: str
+    stargazing_note: str

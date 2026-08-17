@@ -3,7 +3,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import date
 
-from romo_info.models import StormOutlook, TideForecast, WeatherForecast
+from romo_info.models import (
+    StargazingForecast,
+    StormOutlook,
+    TideForecast,
+    WeatherForecast,
+)
 
 _DEFAULT_OUTLOOK = StormOutlook(
     upcoming_storm_date=None,
@@ -28,8 +33,12 @@ class FakeWeatherSource:
     tomorrow: WeatherForecast
     outlook: StormOutlook = field(default_factory=lambda: _DEFAULT_OUTLOOK)
 
-    def fetch_weather_forecast(self, days: int) -> tuple[tuple[WeatherForecast, ...], StormOutlook]:
-        return (self.today, self.tomorrow)[:days], self.outlook
+    stargazing: StargazingForecast | None = None
+
+    def fetch_weather_forecast(
+        self, days: int
+    ) -> tuple[tuple[WeatherForecast, ...], StormOutlook, StargazingForecast | None]:
+        return (self.today, self.tomorrow)[:days], self.outlook, self.stargazing
 
 
 @dataclass

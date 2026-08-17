@@ -1,14 +1,14 @@
 # romo-info
 
-Publishes a daily web page with tide times, wind, and an amber-hunting
-outlook for Rømø, Denmark. Runs once a day as a scheduled GitHub Actions
-job and deploys to GitHub Pages — there is no server to host, no
+Publishes a daily web page with tide times, wind, an amber-hunting
+outlook and tonight's stargazing conditions for Rømø, Denmark. Runs twice a
+day as a scheduled GitHub Actions job and deploys to GitHub Pages — there is no server to host, no
 credentials to store, and no MCP/LLM agent involved.
 
 ## How it works
 
 ```
-GitHub Actions (cron, once/day)
+GitHub Actions (cron, twice/day)
         │
         ▼
 romo_info.__main__:main
@@ -16,6 +16,7 @@ romo_info.__main__:main
         ├── DmiTideTableClient     ──  bundled DMI Havneby tide table (no network)
         ├── OpenMeteoWeatherClient ──► api.open-meteo.com                  (wind)
         ├── AmberAdvisor           ──  rule-based amber-hunting outlook
+        ├── stargazing             ──  moon phase (computed) + night cloud
         ├── ReportFormatter        ──  renders the static HTML page
         └── FileReportPublisher    ──  writes public/index.html
         │
@@ -87,6 +88,18 @@ horizon, so this is a heads-up, not a promise. It's shown once at the end,
 not duplicated per day, since it's the same forward-looking info regardless
 of which day's section you're reading.
 
+**Stargazing** reports tonight's dark window, the mean cloud cover across
+those hours, and how much of the moon is lit. Moon illumination is
+*computed* (`romo_info/stargazing.py`) from the mean synodic month rather
+than fetched — it's a pure astronomical function, accurate to a percent or
+two, which is far finer than "will moonlight drown out the sky tonight?"
+needs. The page updates **twice a day** for this: forecasting tonight's
+cloud from the morning run means a ~15-hour lead time, where the
+late-afternoon run is nearer four and materially more accurate.
+
+Rømø is not a certified Dark Sky Park — that's neighbouring **Mandø** — but
+it has very low light pollution: few residents, no towns.
+
 ## Setup
 
 1. Make the repository **public**. On GitHub Free, Pages only publishes
@@ -103,8 +116,8 @@ That's the whole setup — no accounts to link, no secrets, no local commands.
 
 ### Adjusting the schedule or location
 
-- Cron schedule: edit `.github/workflows/daily-report.yml` (`cron: "0 5 * * *"`
-  is UTC; [crontab.guru](https://crontab.guru) helps with conversions).
+- Cron schedule: edit `.github/workflows/daily-report.yml` (two entries, `"0 5 * * *"`
+  and `"0 16 * * *"`, both UTC; [crontab.guru](https://crontab.guru) helps with conversions).
   GitHub's cron is fixed UTC with no DST awareness, so the local time
   shifts by an hour when Denmark changes clocks.
 - How many days to show: `DAYS_TO_REPORT` (default `1` — today only; set

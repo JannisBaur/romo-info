@@ -8,7 +8,8 @@ from zoneinfo import ZoneInfo
 
 import httpx
 
-from romo_info.models import StormOutlook, WeatherForecast
+from romo_info.models import StargazingForecast, StormOutlook, WeatherForecast
+from romo_info.stargazing import build_forecast, night_window
 from romo_info.weather import (
     had_recent_onshore_storm,
     next_onshore_storm,
@@ -42,12 +43,12 @@ class OpenMeteoClientError(RuntimeError):
 
 
 class OpenMeteoWeatherClient:
-    """Fetches daily wind from Open-Meteo's Forecast API.
+    """Fetches daily wind and tonight's cloud cover from Open-Meteo.
 
-    Covers the requested reported days plus the days before (recent-storm
-    check) and after (upcoming-storm heads-up) that the amber outlook
-    needs. Only daily wind is requested -- general conditions are left to
-    ordinary weather apps -- so no hourly series is fetched at all.
+    Wind covers the requested reported days plus the days before
+    (recent-storm check) and after (upcoming-storm heads-up) that the amber
+    outlook needs. The only hourly series requested is cloud cover, for the
+    stargazing note -- general conditions are left to ordinary weather apps.
     """
 
     def __init__(
@@ -65,7 +66,9 @@ class OpenMeteoWeatherClient:
         self._client = client or httpx.Client(timeout=10.0)
         self._sleep = sleep
 
-    def fetch_weather_forecast(self, days: int) -> tuple[tuple[WeatherForecast, ...], StormOutlook]:
+    def fetch_weather_forecast(
+        self, days: int
+    ) -> tuple[tuple[WeatherForecast, ...], StormOutlook, StargazingForecast | None]:
         forecast_days_total = days + _STORM_LOOKAHEAD_DAYS
         response = self._get_with_retries(forecast_days_total)
         try:
@@ -78,7 +81,10 @@ class OpenMeteoWeatherClient:
         params: dict[str, str | float | int] = {
             "latitude": self._latitude,
             "longitude": self._longitude,
-            "daily": "wind_speed_10m_max,wind_direction_10m_dominant",
+            # Hourly cloud cover is only for the stargazing note; general
+            # conditions are deliberately not reported (see README).
+            "hourly": "cloud_cover",
+            "daily": "wind_speed_10m_max,wind_direction_10m_dominant,sunset,sunrise",
             "timezone": self._timezone,
             "forecast_days": forecast_days_total,
             "past_days": _PAST_DAYS_FOR_STORM_CHECK,
@@ -104,7 +110,7 @@ class OpenMeteoWeatherClient:
     @staticmethod
     def _parse_response(
         payload: dict[str, Any], today_date: date, days: int, forecast_days_total: int
-    ) -> tuple[tuple[WeatherForecast, ...], StormOutlook]:
+    ) -> tuple[tuple[WeatherForecast, ...], StormOutlook, StargazingForecast | None]:
         daily = payload["daily"]
         daily_dates = [date.fromisoformat(d) for d in daily["time"]]
         wind_speeds = [float(s) for s in daily["wind_speed_10m_max"]]
@@ -151,4 +157,37 @@ class OpenMeteoWeatherClient:
         reported = tuple(
             forecast_for(today_date + timedelta(days=offset)) for offset in range(days)
         )
-        return reported, storm_outlook
+        return reported, storm_outlook, _parse_tonight(payload, daily_dates, today_date)
+
+
+def _parse_tonight(
+    payload: dict[str, Any], daily_dates: list[date], today_date: date
+) -> StargazingForecast | None:
+    """Tonight's stargazing conditions: today's sunset to tomorrow's sunrise.
+
+    Returns None rather than raising if the window falls outside the data
+    -- a missing stargazing note shouldn't cost the rest of the report.
+    """
+    daily = payload["daily"]
+    try:
+        today_index = daily_dates.index(today_date)
+        sunset = datetime.fromisoformat(daily["sunset"][today_index])
+        next_sunrise = datetime.fromisoformat(daily["sunrise"][today_index + 1])
+    except (KeyError, ValueError, IndexError):
+        return None
+
+    hourly = payload.get("hourly", {})
+    timestamps = [datetime.fromisoformat(t) for t in hourly.get("time", [])]
+    # Open-Meteo sends null past its horizon; treat those hours as absent
+    # rather than as clear sky.
+    covers = [float(c) for c in hourly.get("cloud_cover", []) if c is not None]
+    if len(covers) != len(timestamps):
+        timestamps, covers = [], []
+
+    darkness_from, darkness_to = night_window(sunset, next_sunrise)
+    return build_forecast(
+        darkness_from=darkness_from,
+        darkness_to=darkness_to,
+        timestamps=timestamps,
+        cloud_cover_pct=covers,
+    )

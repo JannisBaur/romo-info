@@ -41,6 +41,25 @@ properly. The outlook above is only a rule of thumb built from wind and tide.</l
 <a href="https://ravvejr.dk/lakolk-strand/">Ravvejr on Lakolk</a></p>
 </section>"""
 
+_STARGAZING_TIPS = """<section class="card tips">
+<h2>Where to watch the sky</h2>
+<ul>
+<li>From <strong>Toftum</strong>, walk north or out towards the dike — a few minutes away
+from the houses is enough to get streetlights out of your eyes.</li>
+<li>Look <strong>north and west</strong>. Lakolk's lights sit to the south-west and List on
+Sylt glows to the south, so the darkest horizon is away from both.</li>
+<li>Give your eyes <strong>20 minutes</strong> to adapt and don't check your phone — one
+glance at a bright screen resets it. Red light preserves night vision.</li>
+<li>Rømø has very low light pollution: few residents and no towns. The Wadden Sea's
+certified <a href="https://nationalparkvadehavet.dk/nyheder/2024/marts/mandoe-er-nu-dark-sky-park">Dark
+Sky Park is neighbouring Mandø</a>, not Rømø itself, but the same dark skies carry.</li>
+</ul>
+<p class="sources">Sources:
+<a href="https://nationalparkvadehavet.dk/nyheder/2024/marts/mandoe-er-nu-dark-sky-park">Nationalpark
+Vadehavet</a>,
+<a href="https://www.visitdenmark.dk/danmark/oplevelser/natur/beaches/se-paa-stjerner">VisitDenmark</a></p>
+</section>"""
+
 _CSS = """
 :root { color-scheme: light dark; }
 body {
@@ -80,6 +99,7 @@ h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
 .tips li { margin-bottom: 0.5rem; }
 .sources { font-size: 0.8rem; color: #767676; margin-top: 0.9rem; }
 .disclaimer { font-size: 0.8rem; margin-top: 0.75rem; text-align: left; }
+.requested { font-size: 0.8rem; color: #767676; margin-top: 0.6rem; }
 .amber { margin-top: 0.75rem; }
 footer { margin-top: 2rem; color: #767676; font-size: 0.85rem; text-align: center; }
 footer p { margin: 0; }
@@ -97,6 +117,7 @@ class ReportFormatter:
         days_html = "\n".join(self._format_day(day) for day in report.days)
         updated = escape(f"{report.report_date:%A %d %B, %H:%M}")
         outlook = escape(report.storm_outlook_note)
+        stargazing = escape(report.stargazing_note)
         return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -114,6 +135,12 @@ class ReportFormatter:
 <h2>Amber storm outlook</h2>
 <p>{outlook}</p>
 </section>
+<section class="card stars">
+<h2>Stargazing tonight</h2>
+<p>{stargazing}</p>
+<p class="requested">Requested by Pia \U0001f31f</p>
+</section>
+{_STARGAZING_TIPS}
 {_WHERE_TO_LOOK}
 <footer>
 <img class="mascot" src="dog.jpg" width="100" height="100" alt="">

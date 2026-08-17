@@ -57,6 +57,7 @@ def _report() -> DailyReport:
             ),
         ),
         storm_outlook_note="\U0001f52e No storm forecast through Sat 22 Aug.",
+        stargazing_note="\U0001f30c Dark 22:00\u201305:00 · 10% cloud.",
     )
 
 
@@ -126,6 +127,7 @@ def test_text_from_the_report_is_html_escaped() -> None:
                 ),
             ),
             storm_outlook_note=report.storm_outlook_note,
+            stargazing_note="\U0001f30c Dark 22:00\u201305:00 · 10% cloud.",
         )
     )
     assert "<script>" not in html
@@ -148,6 +150,7 @@ def test_missing_tide_data_shows_fallback_message() -> None:
             report_date=report.report_date,
             days=(empty_tide_today, report.days[1]),
             storm_outlook_note=report.storm_outlook_note,
+            stargazing_note="\U0001f30c Dark 22:00\u201305:00 · 10% cloud.",
         )
     )
     assert "unavailable" in html.lower()
