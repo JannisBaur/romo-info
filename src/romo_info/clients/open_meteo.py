@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import time
 from collections.abc import Callable
 from datetime import date, datetime, timedelta
@@ -15,6 +16,8 @@ from romo_info.weather import (
     next_onshore_storm,
     strongest_onshore_day,
 )
+
+logger = logging.getLogger(__name__)
 
 FORECAST_API_URL = "https://api.open-meteo.com/v1/forecast"
 
@@ -72,8 +75,11 @@ class OpenMeteoWeatherClient:
         forecast_days_total = days + _STORM_LOOKAHEAD_DAYS
         response = self._get_with_retries(forecast_days_total)
         try:
-            today_date = datetime.now(ZoneInfo(self._timezone)).date()
-            return self._parse_response(response.json(), today_date, days, forecast_days_total)
+            zone = ZoneInfo(self._timezone)
+            today_date = datetime.now(zone).date()
+            return self._parse_response(
+                response.json(), today_date, days, forecast_days_total, zone
+            )
         except (KeyError, TypeError, ValueError, IndexError) as exc:
             raise OpenMeteoClientError(f"Unexpected forecast API response shape: {exc}") from exc
 
@@ -109,7 +115,11 @@ class OpenMeteoWeatherClient:
 
     @staticmethod
     def _parse_response(
-        payload: dict[str, Any], today_date: date, days: int, forecast_days_total: int
+        payload: dict[str, Any],
+        today_date: date,
+        days: int,
+        forecast_days_total: int,
+        zone: ZoneInfo,
     ) -> tuple[tuple[WeatherForecast, ...], StormOutlook, StargazingForecast | None]:
         daily = payload["daily"]
         daily_dates = [date.fromisoformat(d) for d in daily["time"]]
@@ -157,37 +167,52 @@ class OpenMeteoWeatherClient:
         reported = tuple(
             forecast_for(today_date + timedelta(days=offset)) for offset in range(days)
         )
-        return reported, storm_outlook, _parse_tonight(payload, daily_dates, today_date)
+        return reported, storm_outlook, _parse_tonight(payload, daily_dates, today_date, zone)
 
 
 def _parse_tonight(
-    payload: dict[str, Any], daily_dates: list[date], today_date: date
+    payload: dict[str, Any], daily_dates: list[date], today_date: date, zone: ZoneInfo
 ) -> StargazingForecast | None:
     """Tonight's stargazing conditions: today's sunset to tomorrow's sunrise.
 
-    Returns None rather than raising if the window falls outside the data
-    -- a missing stargazing note shouldn't cost the rest of the report.
+    Returns None instead of raising on anything unexpected. The stargazing
+    note is the least important thing on the page, and it must never be
+    able to take the tides and the amber outlook down with it.
+
+    Open-Meteo returns times as *naive* local strings when a timezone is
+    requested, so everything here is attached to `zone` before use -- the
+    moon calculation needs an aware datetime, and the hourly stamps have to
+    be comparable with the night window.
     """
-    daily = payload["daily"]
     try:
+        daily = payload["daily"]
         today_index = daily_dates.index(today_date)
-        sunset = datetime.fromisoformat(daily["sunset"][today_index])
-        next_sunrise = datetime.fromisoformat(daily["sunrise"][today_index + 1])
-    except (KeyError, ValueError, IndexError):
+        sunset = datetime.fromisoformat(daily["sunset"][today_index]).replace(tzinfo=zone)
+        next_sunrise = datetime.fromisoformat(daily["sunrise"][today_index + 1]).replace(
+            tzinfo=zone
+        )
+
+        hourly = payload.get("hourly", {})
+        raw_times = hourly.get("time", [])
+        raw_covers = hourly.get("cloud_cover", [])
+        # Open-Meteo sends null past its horizon; drop those hours in step
+        # so the two series stay aligned, rather than treating a missing
+        # reading as clear sky.
+        pairs = [
+            (datetime.fromisoformat(t).replace(tzinfo=zone), float(c))
+            for t, c in zip(raw_times, raw_covers, strict=False)
+            if c is not None
+        ]
+        timestamps = [t for t, _ in pairs]
+        covers = [c for _, c in pairs]
+
+        darkness_from, darkness_to = night_window(sunset, next_sunrise)
+        return build_forecast(
+            darkness_from=darkness_from,
+            darkness_to=darkness_to,
+            timestamps=timestamps,
+            cloud_cover_pct=covers,
+        )
+    except (KeyError, TypeError, ValueError, IndexError):
+        logger.warning("Could not build tonight's stargazing forecast", exc_info=True)
         return None
-
-    hourly = payload.get("hourly", {})
-    timestamps = [datetime.fromisoformat(t) for t in hourly.get("time", [])]
-    # Open-Meteo sends null past its horizon; treat those hours as absent
-    # rather than as clear sky.
-    covers = [float(c) for c in hourly.get("cloud_cover", []) if c is not None]
-    if len(covers) != len(timestamps):
-        timestamps, covers = [], []
-
-    darkness_from, darkness_to = night_window(sunset, next_sunrise)
-    return build_forecast(
-        darkness_from=darkness_from,
-        darkness_to=darkness_to,
-        timestamps=timestamps,
-        cloud_cover_pct=covers,
-    )

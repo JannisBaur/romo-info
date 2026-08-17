@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import httpx
 import pytest
@@ -14,6 +15,7 @@ from romo_info.clients.open_meteo import (
 )
 from romo_info.models import StormOutlook, WeatherForecast
 
+_ZONE = ZoneInfo("Europe/Copenhagen")
 _TODAY = date(2026, 8, 16)
 # Matches the client's real days=2, _STORM_LOOKAHEAD_DAYS=5 combination --
 # the fixture payload below is shaped for exactly this window.
@@ -23,7 +25,7 @@ _FORECAST_DAYS_TOTAL = _DAYS + 5
 
 def _parse(payload: dict[str, Any]) -> tuple[WeatherForecast, WeatherForecast, StormOutlook]:
     (today, tomorrow), outlook, _stars = OpenMeteoWeatherClient._parse_response(
-        payload, _TODAY, _DAYS, _FORECAST_DAYS_TOTAL
+        payload, _TODAY, _DAYS, _FORECAST_DAYS_TOTAL, _ZONE
     )
     return today, tomorrow, outlook
 
@@ -226,12 +228,12 @@ def test_days_argument_shifts_which_days_count_as_future_outlook() -> None:
     }
 
     (_today, _tomorrow), outlook_2_days, _s2 = OpenMeteoWeatherClient._parse_response(
-        payload, date(2026, 8, 16), 2, 2 + 5
+        payload, date(2026, 8, 16), 2, 2 + 5, _ZONE
     )
     assert outlook_2_days.upcoming_storm_date is None
 
     (_today_only,), outlook_1_day, _s1 = OpenMeteoWeatherClient._parse_response(
-        payload, date(2026, 8, 16), 1, 1 + 5
+        payload, date(2026, 8, 16), 1, 1 + 5, _ZONE
     )
     assert outlook_1_day.upcoming_storm_date == date(2026, 8, 17)
 
@@ -267,3 +269,90 @@ def test_recent_strongest_onshore_day_carries_its_date() -> None:
 
     assert tomorrow.recent_strongest_onshore_kmh == 60.0
     assert tomorrow.recent_strongest_onshore_date == date(2026, 8, 16)
+
+
+# Exactly the shape Open-Meteo returns when a timezone is requested: local
+# times with *no* offset. An earlier version parsed these into naive
+# datetimes, which the moon calculation rejected -- and because that
+# happened inside the client, it took the whole report down rather than
+# just the stargazing line.
+_TONIGHT_PAYLOAD = {
+    "hourly": {
+        "time": [f"2026-08-17T{h:02d}:00" for h in range(18, 24)]
+        + [f"2026-08-18T{h:02d}:00" for h in range(0, 8)],
+        # Overcast up to 21:00, clear from 22:00. Darkness starts 45 min
+        # after the 20:54 sunset, so only the clear hours should count.
+        "cloud_cover": [80.0] * 4 + [10.0] * 10,
+    },
+    "daily": {
+        "time": ["2026-08-17", "2026-08-18"],
+        "wind_speed_10m_max": [20.0, 20.0],
+        "wind_direction_10m_dominant": [250.0, 250.0],
+        "sunset": ["2026-08-17T20:54", "2026-08-18T20:52"],
+        "sunrise": ["2026-08-17T06:10", "2026-08-18T06:12"],
+    },
+}
+
+
+def test_tonight_is_parsed_from_naive_local_times() -> None:
+    _days, _outlook, tonight = OpenMeteoWeatherClient._parse_response(
+        _TONIGHT_PAYLOAD, date(2026, 8, 17), 1, 1 + 5, _ZONE
+    )
+
+    assert tonight is not None
+    # Naive input must come back attached to the requested zone, or the
+    # moon calculation rejects it.
+    assert tonight.darkness_from.tzinfo is not None
+    assert tonight.darkness_to.tzinfo is not None
+    assert 0 <= tonight.moon_illumination_pct <= 100
+    assert tonight.moon_phase
+
+
+def test_tonight_averages_only_the_dark_hours() -> None:
+    _days, _outlook, tonight = OpenMeteoWeatherClient._parse_response(
+        _TONIGHT_PAYLOAD, date(2026, 8, 17), 1, 1 + 5, _ZONE
+    )
+
+    assert tonight is not None
+    # Darkness starts 45 min after the 20:54 sunset, so the overcast
+    # evening hours before that are excluded and it reads clear.
+    assert tonight.cloud_cover_pct == 10
+
+
+def test_a_broken_stargazing_payload_does_not_sink_the_report() -> None:
+    # The stargazing note is the least important thing on the page; the
+    # tides and amber outlook must survive it failing.
+    payload = {
+        "hourly": {"time": ["nonsense"], "cloud_cover": [10.0]},
+        "daily": {
+            "time": ["2026-08-17", "2026-08-18"],
+            "wind_speed_10m_max": [20.0, 20.0],
+            "wind_direction_10m_dominant": [250.0, 250.0],
+            "sunset": ["not-a-time", "2026-08-18T20:52"],
+            "sunrise": ["2026-08-17T06:10", "2026-08-18T06:12"],
+        },
+    }
+
+    days, outlook, tonight = OpenMeteoWeatherClient._parse_response(
+        payload, date(2026, 8, 17), 1, 1 + 5, _ZONE
+    )
+
+    assert tonight is None
+    assert len(days) == 1
+    assert outlook is not None
+
+
+def test_missing_sun_times_degrade_to_no_stargazing_note() -> None:
+    payload = {
+        "daily": {
+            "time": ["2026-08-17"],
+            "wind_speed_10m_max": [20.0],
+            "wind_direction_10m_dominant": [250.0],
+        },
+    }
+
+    _days, _outlook, tonight = OpenMeteoWeatherClient._parse_response(
+        payload, date(2026, 8, 17), 1, 1 + 5, _ZONE
+    )
+
+    assert tonight is None
