@@ -11,8 +11,17 @@ from datetime import date
 # ravfund.dk), not just one -- see _CALM_ENOUGH_WIND_KMH in amber.py for the
 # matching "calm enough afterward" threshold from the same sources.
 _STORM_WIND_KMH = 58.0
-_ONSHORE_MIN_DEG = 202.5  # SW
-_ONSHORE_MAX_DEG = 337.5  # NW -- Rømø's beach faces roughly west
+
+# Rømø's hunting beaches (Lakolk, Sønderstrand) are on the island's west
+# side, facing the North Sea, so the shore-normal points due west. Wind
+# bearings are meteorological -- the direction wind blows *from* -- which
+# makes 270 deg (W) dead-on onshore, and the band below is symmetric
+# +/-67.5 deg around it: SSW through W to NNW. The edges are nearly
+# alongshore rather than straight in, but a strong blow with any westerly
+# component still drives sea against this coast, which is what matters for
+# stirring amber loose.
+_ONSHORE_MIN_DEG = 202.5  # SSW
+_ONSHORE_MAX_DEG = 337.5  # NNW
 
 _COMPASS_POINTS = (
     "N",

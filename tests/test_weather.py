@@ -5,6 +5,8 @@ from datetime import date
 import pytest
 
 from romo_info.weather import (
+    _ONSHORE_MAX_DEG,
+    _ONSHORE_MIN_DEG,
     compass_point,
     had_recent_onshore_storm,
     is_onshore,
@@ -131,3 +133,20 @@ def test_onshore_boundaries_are_inclusive() -> None:
     assert is_onshore(337.5) is True
     assert is_onshore(202.4) is False
     assert is_onshore(337.6) is False
+
+
+def test_onshore_band_is_centred_on_due_west() -> None:
+    # Rømø's hunting beaches face west, so the shore-normal is 270 deg and
+    # the band must sit symmetrically around it -- a band centred anywhere
+    # else would be describing a different coastline.
+    centre = (_ONSHORE_MIN_DEG + _ONSHORE_MAX_DEG) / 2
+    assert centre == 270.0
+    assert compass_point(centre) == "W"
+
+
+def test_offshore_bearings_are_rejected() -> None:
+    # Due east is straight off the Wadden Sea side, and north/south run
+    # along the coast rather than into it.
+    assert is_onshore(90.0) is False
+    assert is_onshore(0.0) is False
+    assert is_onshore(180.0) is False
