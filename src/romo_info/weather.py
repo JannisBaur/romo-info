@@ -154,7 +154,7 @@ def bucket_day_parts(
                 ),
                 temperature_c=average_temp,
                 precipitation_probability_pct=round(
-                    max(precipitation_probabilities_pct[i] for i in indices)
+                    sum(precipitation_probabilities_pct[i] for i in indices) / len(indices)
                 ),
             )
         )

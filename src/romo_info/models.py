@@ -27,9 +27,12 @@ class DayPartForecast:
     label: str
     summary: str
     temperature_c: float
-    # Highest hourly chance of rain across the window. The summary alone
-    # can't carry this: a window whose dominant condition is "Partly
-    # cloudy" reads the same whether one hour looks iffy or none do.
+    # Average hourly chance of rain across the window. Deliberately the
+    # mean, not the peak: taking the highest hour reported a whole
+    # afternoon as "65%" off one spiky hour, the same overstatement that
+    # picking the most severe weather code used to cause. The summary
+    # alone can't carry this either -- a window whose dominant condition
+    # is "Partly cloudy" reads the same whether rain is plausible or not.
     precipitation_probability_pct: int
 
 

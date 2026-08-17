@@ -72,14 +72,26 @@ def test_tied_conditions_break_toward_the_more_severe_code() -> None:
     assert parts[0].summary == "Slight rain"
 
 
-def test_precipitation_probability_is_the_windows_highest_hour() -> None:
+def test_precipitation_probability_averages_the_window() -> None:
     timestamps = _hourly_range(6, 12)
     temperatures = [10.0] * 6
     codes = [0] * 6
 
-    parts = bucket_day_parts(timestamps, temperatures, codes, [0.0, 5.0, 20.0, 45.0, 10.0, 0.0])
+    parts = bucket_day_parts(timestamps, temperatures, codes, [10.0, 10.0, 20.0, 20.0, 30.0, 30.0])
 
-    assert parts[0].precipitation_probability_pct == 45
+    assert parts[0].precipitation_probability_pct == 20
+
+
+def test_one_spiky_hour_does_not_set_the_windows_rain_chance() -> None:
+    # Regression: taking the highest hour reported a mostly-dry afternoon
+    # as "65%" because a single hour peaked there.
+    timestamps = _hourly_range(12, 18)
+    temperatures = [18.0] * 6
+    codes = [2] * 6
+
+    parts = bucket_day_parts(timestamps, temperatures, codes, [10.0, 10.0, 65.0, 10.0, 5.0, 5.0])
+
+    assert parts[0].precipitation_probability_pct == 18
 
 
 def test_hours_outside_any_window_are_ignored() -> None:
