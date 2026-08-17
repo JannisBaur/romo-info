@@ -33,19 +33,22 @@ h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
   border-radius: 50%;
   margin: 0 auto 0.75rem;
 }
-.day { border: 1px solid #80808040; border-radius: 12px; padding: 1rem 1.25rem; margin: 1rem 0; }
-.day h2 { margin-top: 0; font-size: 1.15rem; }
-.day h3 {
+/* Days and the storm outlook are peers, so they share one card style --
+   otherwise the outlook's h2 falls back to the browser default and reads
+   as a page-level heading rather than another section. */
+.card { border: 1px solid #80808040; border-radius: 12px; padding: 1rem 1.25rem; margin: 1rem 0; }
+.card h2 { margin-top: 0; font-size: 1.15rem; }
+.card h3 {
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: #767676;
   margin-bottom: 0.4rem;
 }
-.day ul { margin: 0 0 0.75rem; padding-left: 1.1rem; }
+.card p:last-child { margin-bottom: 0; }
+.card ul { margin: 0 0 0.75rem; padding-left: 1.1rem; }
 .wind { color: #767676; font-size: 0.9rem; }
 .amber { margin-top: 0.75rem; }
-.outlook { margin-top: 1.5rem; }
 footer { margin-top: 2rem; color: #767676; font-size: 0.85rem; text-align: center; }
 footer p { margin: 0; }
 """
@@ -75,7 +78,7 @@ class ReportFormatter:
 <h1>\U0001f30a Rømø tides &amp; amber</h1>
 <p class="updated">Updated {updated}</p>
 {days_html}
-<section class="outlook">
+<section class="card outlook">
 <h2>Amber storm outlook</h2>
 <p>{outlook}</p>
 </section>
@@ -90,7 +93,7 @@ class ReportFormatter:
 
     def _format_day(self, day: DayForecast) -> str:
         return (
-            f'<section class="day">\n'
+            f'<section class="card day">\n'
             f"<h2>{escape(day.label)} ({day.for_date:%a %d %b})</h2>\n"
             f"<h3>Tides</h3>\n"
             f"<ul>{self._format_tide_lines(day.tide)}</ul>\n"

@@ -170,3 +170,11 @@ def test_wind_direction_and_shore_are_reported() -> None:
     assert "WSW" in html
     assert "250°" in html
     assert "onshore" in html
+
+
+def test_days_and_outlook_share_the_card_styling() -> None:
+    # They are peers on the page. Without the shared class the outlook's
+    # h2 falls back to the browser default and dwarfs the day headings.
+    html = ReportFormatter().format(_report())
+    assert '<section class="card day">' in html
+    assert '<section class="card outlook">' in html
