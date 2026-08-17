@@ -27,6 +27,10 @@ class DayPartForecast:
     label: str
     summary: str
     temperature_c: float
+    # Highest hourly chance of rain across the window. The summary alone
+    # can't carry this: a window whose dominant condition is "Partly
+    # cloudy" reads the same whether one hour looks iffy or none do.
+    precipitation_probability_pct: int
 
 
 @dataclass(frozen=True, slots=True)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Sequence
 from datetime import date, datetime
 
@@ -120,6 +121,7 @@ def bucket_day_parts(
     timestamps: Sequence[datetime],
     temperatures_c: Sequence[float],
     weather_codes: Sequence[int],
+    precipitation_probabilities_pct: Sequence[float],
 ) -> tuple[DayPartForecast, ...]:
     """Groups hourly weather into Morning/Afternoon/Evening summaries.
 
@@ -127,8 +129,16 @@ def bucket_day_parts(
     same day-part breakdown, so it's tested directly with fixed input, no
     network or mocking needed.
     """
-    if not (len(timestamps) == len(temperatures_c) == len(weather_codes)):
-        raise ValueError("timestamps, temperatures_c, and weather_codes must be the same length")
+    if not (
+        len(timestamps)
+        == len(temperatures_c)
+        == len(weather_codes)
+        == len(precipitation_probabilities_pct)
+    ):
+        raise ValueError(
+            "timestamps, temperatures_c, weather_codes, and "
+            "precipitation_probabilities_pct must be the same length"
+        )
 
     parts: list[DayPartForecast] = []
     for label, start_hour, end_hour in _DAY_PARTS:
@@ -136,15 +146,31 @@ def bucket_day_parts(
         if not indices:
             continue
         average_temp = sum(temperatures_c[i] for i in indices) / len(indices)
-        # The most severe code in the window is the more useful headline
-        # (e.g. one rainy hour in an otherwise clear morning still means
-        # "bring a jacket"); WMO codes increase with severity.
-        worst_code = max(weather_codes[i] for i in indices)
         parts.append(
             DayPartForecast(
                 label=label,
-                summary=WEATHER_CODE_SUMMARIES.get(worst_code, "Unknown conditions"),
+                summary=WEATHER_CODE_SUMMARIES.get(
+                    _dominant_code([weather_codes[i] for i in indices]), "Unknown conditions"
+                ),
                 temperature_c=average_temp,
+                precipitation_probability_pct=round(
+                    max(precipitation_probabilities_pct[i] for i in indices)
+                ),
             )
         )
     return tuple(parts)
+
+
+def _dominant_code(codes: Sequence[int]) -> int:
+    """The condition that best describes the window as a whole.
+
+    Deliberately *not* the most severe code: taking the max let a single
+    drizzly hour label an otherwise clear afternoon "Light drizzle", badly
+    overstating the day. The chance of rain is now reported separately
+    (precipitation_probability_pct), so choosing the representative
+    condition here no longer hides an iffy hour. Ties break toward the
+    more severe code, since WMO codes broadly increase with severity.
+    """
+    counts = Counter(codes)
+    most_common_count = max(counts.values())
+    return max(code for code, count in counts.items() if count == most_common_count)

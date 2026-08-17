@@ -16,7 +16,11 @@ from tests.fakes import (
 )
 
 _TODAY_WEATHER = WeatherForecast(
-    day_parts=(DayPartForecast(label="Morning", summary="Sunny", temperature_c=12.0),),
+    day_parts=(
+        DayPartForecast(
+            label="Morning", summary="Sunny", temperature_c=12.0, precipitation_probability_pct=0
+        ),
+    ),
     temperature_min_c=10.0,
     temperature_max_c=15.0,
     wind_speed_max_kmh=10.0,
@@ -26,7 +30,11 @@ _TODAY_WEATHER = WeatherForecast(
     recent_strongest_onshore_kmh=60.0,
 )
 _TOMORROW_WEATHER = WeatherForecast(
-    day_parts=(DayPartForecast(label="Morning", summary="Cloudy", temperature_c=11.0),),
+    day_parts=(
+        DayPartForecast(
+            label="Morning", summary="Cloudy", temperature_c=11.0, precipitation_probability_pct=0
+        ),
+    ),
     temperature_min_c=9.0,
     temperature_max_c=13.0,
     wind_speed_max_kmh=15.0,

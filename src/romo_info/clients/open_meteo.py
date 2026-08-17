@@ -77,7 +77,7 @@ class OpenMeteoWeatherClient:
         params: dict[str, str | float | int] = {
             "latitude": self._latitude,
             "longitude": self._longitude,
-            "hourly": "temperature_2m,weathercode",
+            "hourly": "temperature_2m,weathercode,precipitation_probability",
             "daily": (
                 "temperature_2m_max,temperature_2m_min,"
                 "wind_speed_10m_max,wind_direction_10m_dominant"
@@ -112,6 +112,10 @@ class OpenMeteoWeatherClient:
         all_timestamps = [datetime.fromisoformat(t) for t in hourly["time"]]
         all_temperatures = [float(t) for t in hourly["temperature_2m"]]
         all_codes = [int(c) for c in hourly["weathercode"]]
+        # Open-Meteo sends null for this beyond its probability horizon;
+        # treat a missing value as 0% rather than dropping the hour, so the
+        # day-part summaries still line up with the other hourly series.
+        all_precip_probs = [float(p or 0.0) for p in hourly["precipitation_probability"]]
 
         daily = payload["daily"]
         daily_dates = [date.fromisoformat(d) for d in daily["time"]]
@@ -145,6 +149,7 @@ class OpenMeteoWeatherClient:
                 [all_timestamps[i] for i in hour_indices],
                 [all_temperatures[i] for i in hour_indices],
                 [all_codes[i] for i in hour_indices],
+                [all_precip_probs[i] for i in hour_indices],
             )
             day_index = daily_dates.index(target_date)
             # "Past" here means before *this* day -- a later reported day's

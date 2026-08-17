@@ -42,6 +42,7 @@ _SUCCESS_PAYLOAD = {
         ),
         "temperature_2m": [99.0] * 16 + [16.0] * 16 + [12.0] * 16,
         "weathercode": [61] * 16 + [3] * 16 + [80] * 16,
+        "precipitation_probability": [90.0] * 16 + [10.0] * 16 + [70.0] * 16,
     },
     "daily": {
         "time": [
@@ -238,7 +239,12 @@ def test_days_argument_shifts_which_days_count_as_future_outlook() -> None:
     # (not part of the future outlook window), so no upcoming storm is
     # flagged; with days=1, it falls into the future window instead.
     payload = {
-        "hourly": {"time": [], "temperature_2m": [], "weathercode": []},
+        "hourly": {
+            "time": [],
+            "temperature_2m": [],
+            "weathercode": [],
+            "precipitation_probability": [],
+        },
         "daily": {
             "time": ["2026-08-16", "2026-08-17", "2026-08-18"],
             "temperature_2m_min": [10.0, 10.0, 10.0],

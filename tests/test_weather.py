@@ -21,7 +21,7 @@ def test_buckets_hours_into_labelled_day_parts() -> None:
     temperatures = [10.0] * 24
     codes = [0] * 24  # clear sky throughout
 
-    parts = bucket_day_parts(timestamps, temperatures, codes)
+    parts = bucket_day_parts(timestamps, temperatures, codes, [0.0] * 24)
 
     assert [p.label for p in parts] == ["Morning", "Afternoon", "Evening"]
     assert all(p.summary == "Clear sky" for p in parts)
@@ -32,21 +32,54 @@ def test_averages_temperature_within_a_day_part() -> None:
     temperatures = [10.0, 12.0, 14.0, 16.0, 18.0, 20.0]
     codes = [0] * 6
 
-    parts = bucket_day_parts(timestamps, temperatures, codes)
+    parts = bucket_day_parts(timestamps, temperatures, codes, [0.0] * 6)
 
     assert len(parts) == 1
     assert parts[0].label == "Morning"
     assert parts[0].temperature_c == pytest.approx(15.0)
 
 
-def test_most_severe_code_in_window_wins() -> None:
+def test_one_bad_hour_does_not_relabel_an_otherwise_clear_window() -> None:
+    # Regression: picking the *most severe* code let a single drizzly hour
+    # report the whole afternoon as "Light drizzle", which read as a wet
+    # day when the forecast was mostly clear.
     timestamps = _hourly_range(12, 18)
     temperatures = [18.0] * 6
-    codes = [0, 0, 61, 0, 0, 0]  # one hour of rain amid clear sky
+    codes = [0, 0, 51, 0, 0, 0]  # one drizzly hour amid clear sky
 
-    parts = bucket_day_parts(timestamps, temperatures, codes)
+    parts = bucket_day_parts(timestamps, temperatures, codes, [0.0] * 6)
+
+    assert parts[0].summary == "Clear sky"
+
+
+def test_dominant_code_wins_when_the_window_is_genuinely_wet() -> None:
+    timestamps = _hourly_range(12, 18)
+    temperatures = [18.0] * 6
+    codes = [61, 61, 61, 61, 0, 0]  # actually a rainy afternoon
+
+    parts = bucket_day_parts(timestamps, temperatures, codes, [0.0] * 6)
 
     assert parts[0].summary == "Slight rain"
+
+
+def test_tied_conditions_break_toward_the_more_severe_code() -> None:
+    timestamps = _hourly_range(12, 18)
+    temperatures = [18.0] * 6
+    codes = [0, 0, 0, 61, 61, 61]  # half clear, half rain
+
+    parts = bucket_day_parts(timestamps, temperatures, codes, [0.0] * 6)
+
+    assert parts[0].summary == "Slight rain"
+
+
+def test_precipitation_probability_is_the_windows_highest_hour() -> None:
+    timestamps = _hourly_range(6, 12)
+    temperatures = [10.0] * 6
+    codes = [0] * 6
+
+    parts = bucket_day_parts(timestamps, temperatures, codes, [0.0, 5.0, 20.0, 45.0, 10.0, 0.0])
+
+    assert parts[0].precipitation_probability_pct == 45
 
 
 def test_hours_outside_any_window_are_ignored() -> None:
@@ -54,14 +87,14 @@ def test_hours_outside_any_window_are_ignored() -> None:
     temperatures = [5.0] * 6
     codes = [0] * 6
 
-    parts = bucket_day_parts(timestamps, temperatures, codes)
+    parts = bucket_day_parts(timestamps, temperatures, codes, [0.0] * 6)
 
     assert parts == ()
 
 
 def test_mismatched_lengths_raise_value_error() -> None:
     with pytest.raises(ValueError, match="same length"):
-        bucket_day_parts(_hourly_range(6, 12), [10.0], [0])
+        bucket_day_parts(_hourly_range(6, 12), [10.0], [0], [0.0])
 
 
 def test_strong_onshore_day_counts_as_recent_storm() -> None:

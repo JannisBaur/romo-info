@@ -17,9 +17,24 @@ from romo_info.report import ReportFormatter
 def _weather(*, storm: bool = True) -> WeatherForecast:
     return WeatherForecast(
         day_parts=(
-            DayPartForecast(label="Morning", summary="Partly cloudy", temperature_c=14.0),
-            DayPartForecast(label="Afternoon", summary="Clear sky", temperature_c=19.0),
-            DayPartForecast(label="Evening", summary="Overcast", temperature_c=16.0),
+            DayPartForecast(
+                label="Morning",
+                summary="Partly cloudy",
+                temperature_c=14.0,
+                precipitation_probability_pct=0,
+            ),
+            DayPartForecast(
+                label="Afternoon",
+                summary="Clear sky",
+                temperature_c=19.0,
+                precipitation_probability_pct=0,
+            ),
+            DayPartForecast(
+                label="Evening",
+                summary="Overcast",
+                temperature_c=16.0,
+                precipitation_probability_pct=0,
+            ),
         ),
         temperature_min_c=14.0,
         temperature_max_c=19.0,
@@ -186,3 +201,46 @@ def test_missing_weather_data_shows_fallback_message() -> None:
         )
     )
     assert "unavailable" in html.lower()
+
+
+def test_meaningful_rain_chance_is_shown() -> None:
+    report = _report()
+    today = report.days[0]
+    html = ReportFormatter().format(
+        DailyReport(
+            report_date=report.report_date,
+            days=(
+                DayForecast(
+                    for_date=today.for_date,
+                    label=today.label,
+                    tide=today.tide,
+                    weather=WeatherForecast(
+                        day_parts=(
+                            DayPartForecast(
+                                label="Morning",
+                                summary="Partly cloudy",
+                                temperature_c=14.0,
+                                precipitation_probability_pct=40,
+                            ),
+                        ),
+                        temperature_min_c=14.0,
+                        temperature_max_c=19.0,
+                        wind_speed_max_kmh=22.0,
+                        wind_direction_deg=270.0,
+                        recent_onshore_storm=False,
+                        recent_storm_lookback_days=3,
+                        recent_strongest_onshore_kmh=None,
+                    ),
+                    amber_note=today.amber_note,
+                ),
+            ),
+            storm_outlook_note=report.storm_outlook_note,
+        )
+    )
+    assert "40%" in html
+
+
+def test_negligible_rain_chance_is_omitted_as_noise() -> None:
+    # Printing "0% rain" on every dry window would be pure clutter.
+    html = ReportFormatter().format(_report())
+    assert "0%" not in html
