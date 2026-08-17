@@ -1,40 +1,7 @@
 from __future__ import annotations
 
-from collections import Counter
 from collections.abc import Sequence
-from datetime import date, datetime
-
-from romo_info.models import DayPartForecast
-
-# Open-Meteo's weathercode -> short human summary (WMO code table, common subset).
-WEATHER_CODE_SUMMARIES: dict[int, str] = {
-    0: "Clear sky",
-    1: "Mostly clear",
-    2: "Partly cloudy",
-    3: "Overcast",
-    45: "Fog",
-    48: "Depositing rime fog",
-    51: "Light drizzle",
-    53: "Moderate drizzle",
-    55: "Dense drizzle",
-    61: "Slight rain",
-    63: "Moderate rain",
-    65: "Heavy rain",
-    71: "Slight snow",
-    73: "Moderate snow",
-    75: "Heavy snow",
-    80: "Rain showers",
-    81: "Moderate rain showers",
-    82: "Violent rain showers",
-    95: "Thunderstorm",
-}
-
-# (label, start_hour_inclusive, end_hour_exclusive)
-_DAY_PARTS: tuple[tuple[str, int, int], ...] = (
-    ("Morning", 6, 12),
-    ("Afternoon", 12, 18),
-    ("Evening", 18, 22),
-)
+from datetime import date
 
 # Amber washes ashore on Denmark's North Sea coast in a two-phase pattern:
 # a storm (classically from the SW) loosens it from the seabed first, then
@@ -115,62 +82,3 @@ def strongest_onshore_day(
         if _ONSHORE_MIN_DEG <= direction <= _ONSHORE_MAX_DEG
     ]
     return max(onshore_days, key=lambda day_and_speed: day_and_speed[1]) if onshore_days else None
-
-
-def bucket_day_parts(
-    timestamps: Sequence[datetime],
-    temperatures_c: Sequence[float],
-    weather_codes: Sequence[int],
-    precipitation_probabilities_pct: Sequence[float],
-) -> tuple[DayPartForecast, ...]:
-    """Groups hourly weather into Morning/Afternoon/Evening summaries.
-
-    Pure function: given the same hourly readings it always returns the
-    same day-part breakdown, so it's tested directly with fixed input, no
-    network or mocking needed.
-    """
-    if not (
-        len(timestamps)
-        == len(temperatures_c)
-        == len(weather_codes)
-        == len(precipitation_probabilities_pct)
-    ):
-        raise ValueError(
-            "timestamps, temperatures_c, weather_codes, and "
-            "precipitation_probabilities_pct must be the same length"
-        )
-
-    parts: list[DayPartForecast] = []
-    for label, start_hour, end_hour in _DAY_PARTS:
-        indices = [i for i, at in enumerate(timestamps) if start_hour <= at.hour < end_hour]
-        if not indices:
-            continue
-        average_temp = sum(temperatures_c[i] for i in indices) / len(indices)
-        parts.append(
-            DayPartForecast(
-                label=label,
-                summary=WEATHER_CODE_SUMMARIES.get(
-                    _dominant_code([weather_codes[i] for i in indices]), "Unknown conditions"
-                ),
-                temperature_c=average_temp,
-                precipitation_probability_pct=round(
-                    sum(precipitation_probabilities_pct[i] for i in indices) / len(indices)
-                ),
-            )
-        )
-    return tuple(parts)
-
-
-def _dominant_code(codes: Sequence[int]) -> int:
-    """The condition that best describes the window as a whole.
-
-    Deliberately *not* the most severe code: taking the max let a single
-    drizzly hour label an otherwise clear afternoon "Light drizzle", badly
-    overstating the day. The chance of rain is now reported separately
-    (precipitation_probability_pct), so choosing the representative
-    condition here no longer hides an iffy hour. Ties break toward the
-    more severe code, since WMO codes broadly increase with severity.
-    """
-    counts = Counter(codes)
-    most_common_count = max(counts.values())
-    return max(code for code, count in counts.items() if count == most_common_count)

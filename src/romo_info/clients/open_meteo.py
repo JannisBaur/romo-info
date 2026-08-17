@@ -10,7 +10,6 @@ import httpx
 
 from romo_info.models import StormOutlook, WeatherForecast
 from romo_info.weather import (
-    bucket_day_parts,
     had_recent_onshore_storm,
     next_onshore_storm,
     strongest_onshore_day,
@@ -43,10 +42,12 @@ class OpenMeteoClientError(RuntimeError):
 
 
 class OpenMeteoWeatherClient:
-    """Fetches the requested number of days' weather (by day part), starting
-    today, from Open-Meteo's Forecast API -- plus wind for the days before
-    (recent-storm check) and after (upcoming-storm heads-up) for the
-    amber-hunting outlook.
+    """Fetches daily wind from Open-Meteo's Forecast API.
+
+    Covers the requested reported days plus the days before (recent-storm
+    check) and after (upcoming-storm heads-up) that the amber outlook
+    needs. Only daily wind is requested -- general conditions are left to
+    ordinary weather apps -- so no hourly series is fetched at all.
     """
 
     def __init__(
@@ -77,11 +78,7 @@ class OpenMeteoWeatherClient:
         params: dict[str, str | float | int] = {
             "latitude": self._latitude,
             "longitude": self._longitude,
-            "hourly": "temperature_2m,weathercode,precipitation_probability",
-            "daily": (
-                "temperature_2m_max,temperature_2m_min,"
-                "wind_speed_10m_max,wind_direction_10m_dominant"
-            ),
+            "daily": "wind_speed_10m_max,wind_direction_10m_dominant",
             "timezone": self._timezone,
             "forecast_days": forecast_days_total,
             "past_days": _PAST_DAYS_FOR_STORM_CHECK,
@@ -108,21 +105,10 @@ class OpenMeteoWeatherClient:
     def _parse_response(
         payload: dict[str, Any], today_date: date, days: int, forecast_days_total: int
     ) -> tuple[tuple[WeatherForecast, ...], StormOutlook]:
-        hourly = payload["hourly"]
-        all_timestamps = [datetime.fromisoformat(t) for t in hourly["time"]]
-        all_temperatures = [float(t) for t in hourly["temperature_2m"]]
-        all_codes = [int(c) for c in hourly["weathercode"]]
-        # Open-Meteo sends null for this beyond its probability horizon;
-        # treat a missing value as 0% rather than dropping the hour, so the
-        # day-part summaries still line up with the other hourly series.
-        all_precip_probs = [float(p or 0.0) for p in hourly["precipitation_probability"]]
-
         daily = payload["daily"]
         daily_dates = [date.fromisoformat(d) for d in daily["time"]]
         wind_speeds = [float(s) for s in daily["wind_speed_10m_max"]]
         wind_directions = [float(d) for d in daily["wind_direction_10m_dominant"]]
-        temperature_mins = [float(t) for t in daily["temperature_2m_min"]]
-        temperature_maxs = [float(t) for t in daily["temperature_2m_max"]]
 
         # today_date is identified independently from wall-clock time
         # (matching the requested timezone) rather than by array position
@@ -144,13 +130,6 @@ class OpenMeteoWeatherClient:
         )
 
         def forecast_for(target_date: date) -> WeatherForecast:
-            hour_indices = [i for i, t in enumerate(all_timestamps) if t.date() == target_date]
-            day_parts = bucket_day_parts(
-                [all_timestamps[i] for i in hour_indices],
-                [all_temperatures[i] for i in hour_indices],
-                [all_codes[i] for i in hour_indices],
-                [all_precip_probs[i] for i in hour_indices],
-            )
             day_index = daily_dates.index(target_date)
             # "Past" here means before *this* day -- a later reported day's
             # lookback naturally includes the earlier reported days too,
@@ -161,11 +140,7 @@ class OpenMeteoWeatherClient:
             past_directions = [wind_directions[i] for i in past_indices]
             strongest_recent = strongest_onshore_day(past_dates, past_speeds, past_directions)
             return WeatherForecast(
-                day_parts=day_parts,
-                temperature_min_c=temperature_mins[day_index],
-                temperature_max_c=temperature_maxs[day_index],
                 wind_speed_max_kmh=wind_speeds[day_index],
-                wind_direction_deg=wind_directions[day_index],
                 recent_onshore_storm=had_recent_onshore_storm(past_speeds, past_directions),
                 recent_storm_lookback_days=len(past_indices),
                 recent_strongest_onshore_kmh=(strongest_recent[1] if strongest_recent else None),

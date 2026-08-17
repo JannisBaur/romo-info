@@ -38,11 +38,7 @@ def _weather(
     strongest_onshore_kmh: float | None = None,
 ) -> WeatherForecast:
     return WeatherForecast(
-        day_parts=(),
-        temperature_min_c=14.0,
-        temperature_max_c=18.0,
         wind_speed_max_kmh=speed_kmh,
-        wind_direction_deg=270.0,
         recent_onshore_storm=recent_storm,
         recent_storm_lookback_days=lookback_days,
         recent_strongest_onshore_kmh=strongest_onshore_kmh,

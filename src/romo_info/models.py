@@ -23,26 +23,17 @@ class TideForecast:
 
 
 @dataclass(frozen=True, slots=True)
-class DayPartForecast:
-    label: str
-    summary: str
-    temperature_c: float
-    # Average hourly chance of rain across the window. Deliberately the
-    # mean, not the peak: taking the highest hour reported a whole
-    # afternoon as "65%" off one spiky hour, the same overstatement that
-    # picking the most severe weather code used to cause. The summary
-    # alone can't carry this either -- a window whose dominant condition
-    # is "Partly cloudy" reads the same whether rain is plausible or not.
-    precipitation_probability_pct: int
-
-
-@dataclass(frozen=True, slots=True)
 class WeatherForecast:
-    day_parts: tuple[DayPartForecast, ...]
-    temperature_min_c: float
-    temperature_max_c: float
+    """Only what the beach actually needs.
+
+    General conditions (temperature, cloud, chance of rain) used to be
+    reported here too, but any weather app does that better, and a single
+    number summarising a six-hour window was repeatedly misleading. Wind
+    stays because it drives the amber outlook and decides whether the
+    beach is pleasant.
+    """
+
     wind_speed_max_kmh: float
-    wind_direction_deg: float
     recent_onshore_storm: bool
     recent_storm_lookback_days: int
     # The strongest onshore-direction day in the lookback window, even if it

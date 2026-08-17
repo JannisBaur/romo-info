@@ -34,16 +34,6 @@ def _parse(payload: dict[str, Any]) -> tuple[WeatherForecast, WeatherForecast, S
 # (3, overcast) and tomorrow (80, showers), specifically to catch a bug
 # where one day's hours leak into another's day-part bucketing.
 _SUCCESS_PAYLOAD = {
-    "hourly": {
-        "time": (
-            [f"2026-08-15T{hour:02d}:00" for hour in range(6, 22)]
-            + [f"2026-08-16T{hour:02d}:00" for hour in range(6, 22)]
-            + [f"2026-08-17T{hour:02d}:00" for hour in range(6, 22)]
-        ),
-        "temperature_2m": [99.0] * 16 + [16.0] * 16 + [12.0] * 16,
-        "weathercode": [61] * 16 + [3] * 16 + [80] * 16,
-        "precipitation_probability": [90.0] * 16 + [10.0] * 16 + [70.0] * 16,
-    },
     "daily": {
         "time": [
             "2026-08-13",
@@ -57,8 +47,6 @@ _SUCCESS_PAYLOAD = {
             "2026-08-21",
             "2026-08-22",
         ],
-        "temperature_2m_min": [8.0, 9.0, 10.0, 12.0, 11.0, 10.0, 9.0, 11.0, 12.0, 13.0],
-        "temperature_2m_max": [14.0, 15.0, 16.0, 18.0, 15.0, 14.0, 13.0, 16.0, 17.0, 18.0],
         # Calm on the 13th-15th; a strong onshore blow ON today (the 16th)
         # itself -- this should NOT count as "recent" for today (it's
         # today, not the past), but SHOULD count for tomorrow (the 17th),
@@ -170,19 +158,10 @@ def test_persistent_connection_errors_exhaust_all_attempts() -> None:
     assert sleeps == [2.0, 4.0]
 
 
-def test_fetch_weather_forecast_returns_todays_and_tomorrows_day_parts() -> None:
-    today, tomorrow, _outlook = _parse(_SUCCESS_PAYLOAD)
-
-    assert all(p.summary == "Overcast" and p.temperature_c == 16.0 for p in today.day_parts)
-    assert all(p.summary == "Rain showers" and p.temperature_c == 12.0 for p in tomorrow.day_parts)
-
-
 def test_fetch_weather_forecast_uses_correct_daily_values_per_day() -> None:
     today, tomorrow, _outlook = _parse(_SUCCESS_PAYLOAD)
 
-    assert today.temperature_max_c == 18.0
     assert today.wind_speed_max_kmh == 60.0
-    assert tomorrow.temperature_max_c == 15.0
     assert tomorrow.wind_speed_max_kmh == 20.0
 
 
@@ -239,16 +218,8 @@ def test_days_argument_shifts_which_days_count_as_future_outlook() -> None:
     # (not part of the future outlook window), so no upcoming storm is
     # flagged; with days=1, it falls into the future window instead.
     payload = {
-        "hourly": {
-            "time": [],
-            "temperature_2m": [],
-            "weathercode": [],
-            "precipitation_probability": [],
-        },
         "daily": {
             "time": ["2026-08-16", "2026-08-17", "2026-08-18"],
-            "temperature_2m_min": [10.0, 10.0, 10.0],
-            "temperature_2m_max": [15.0, 15.0, 15.0],
             "wind_speed_10m_max": [10.0, 70.0, 10.0],
             "wind_direction_10m_dominant": [90.0, 250.0, 90.0],
         },

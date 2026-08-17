@@ -1,6 +1,6 @@
 # romo-info
 
-Publishes a daily web page with tide times, weather, and an amber-hunting
+Publishes a daily web page with tide times, wind, and an amber-hunting
 outlook for Rømø, Denmark. Runs once a day as a scheduled GitHub Actions
 job and deploys to GitHub Pages — there is no server to host, no
 credentials to store, and no MCP/LLM agent involved.
@@ -14,7 +14,7 @@ GitHub Actions (cron, once/day)
 romo_info.__main__:main
         │
         ├── DmiTideTableClient     ──  bundled DMI Havneby tide table (no network)
-        ├── OpenMeteoWeatherClient ──► api.open-meteo.com               (weather)
+        ├── OpenMeteoWeatherClient ──► api.open-meteo.com                  (wind)
         ├── AmberAdvisor           ──  rule-based amber-hunting outlook
         ├── ReportFormatter        ──  renders the static HTML page
         └── FileReportPublisher    ──  writes public/index.html
@@ -44,11 +44,16 @@ matches official sources closely, and has zero runtime network dependency
 for tides — but it **only covers one calendar year**; see "Refreshing the
 tide table" below.
 
-**Weather** is split into Morning / Afternoon / Evening (`romo_info/weather.py`
-buckets Open-Meteo's hourly data into those windows) rather than one blended
-daily summary, since "sunny morning, rain later" is a lot more actionable
-than a single averaged line. Transient network failures are retried (3
-attempts with backoff) so one dropped connection doesn't cost the day's
+**Wind** is the only weather reported, and it's deliberate. General
+conditions (temperature, cloud, chance of rain) were dropped: every phone
+already has a weather app that does them better, and compressing a
+six-hour window into one summary kept overstating things — first by
+labelling a mostly-clear afternoon after its single drizzliest hour, then
+by reporting that window's peak chance of rain as if it applied all
+afternoon. Wind stays because it drives the amber outlook and decides
+whether the beach is worth the trip. Only daily wind is fetched, so no
+hourly series is requested at all. Transient network failures are retried
+(3 attempts with backoff) so one dropped connection doesn't cost the day's
 report.
 
 **Amber-hunting outlook** is a small deterministic rule
@@ -102,7 +107,7 @@ That's the whole setup — no accounts to link, no secrets, no local commands.
   `2` for today + tomorrow, and so on). Set it in the workflow's `env:` for
   the "Build report page" step.
 - Weather coordinates: `romo_info.config` defaults to central Rømø
-  (`LATITUDE=55.13`, `LONGITUDE=8.45`). This only affects the *weather*
+  (`LATITUDE=55.13`, `LONGITUDE=8.45`). This only affects the *wind*
   forecast — tide data comes from the fixed Havneby station table.
 - Output location: `OUTPUT_PATH` (default `public/index.html`). The
   workflow uploads whatever is in `public/`, so change both together.
@@ -147,8 +152,8 @@ poetry run python -m romo_info && open public/index.html
   so adding a new data source or output target means writing a new class,
   not editing the service (open/closed).
 - **Pure core**: `romo_info.tide.find_tide_extremes`, `romo_info.clients.dmi_tide.parse_table`
-  /`extremes_for_date`, `romo_info.weather.bucket_day_parts`
-  /`had_recent_onshore_storm`/`next_onshore_storm`/`strongest_onshore_day`,
+  /`extremes_for_date`, `romo_info.weather.had_recent_onshore_storm`
+  /`next_onshore_storm`/`strongest_onshore_day`,
   and `romo_info.amber.AmberAdvisor` are all deterministic (no I/O,
   wall-clock passed in explicitly where it matters) — cheap to test
   exhaustively with fixed inputs, no network or mocking required.

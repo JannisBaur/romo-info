@@ -1,112 +1,14 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date
 
 import pytest
 
 from romo_info.weather import (
-    bucket_day_parts,
     had_recent_onshore_storm,
     next_onshore_storm,
     strongest_onshore_day,
 )
-
-
-def _hourly_range(start_hour: int, end_hour: int) -> list[datetime]:
-    return [datetime(2026, 8, 16, hour) for hour in range(start_hour, end_hour)]
-
-
-def test_buckets_hours_into_labelled_day_parts() -> None:
-    timestamps = _hourly_range(0, 24)
-    temperatures = [10.0] * 24
-    codes = [0] * 24  # clear sky throughout
-
-    parts = bucket_day_parts(timestamps, temperatures, codes, [0.0] * 24)
-
-    assert [p.label for p in parts] == ["Morning", "Afternoon", "Evening"]
-    assert all(p.summary == "Clear sky" for p in parts)
-
-
-def test_averages_temperature_within_a_day_part() -> None:
-    timestamps = _hourly_range(6, 12)
-    temperatures = [10.0, 12.0, 14.0, 16.0, 18.0, 20.0]
-    codes = [0] * 6
-
-    parts = bucket_day_parts(timestamps, temperatures, codes, [0.0] * 6)
-
-    assert len(parts) == 1
-    assert parts[0].label == "Morning"
-    assert parts[0].temperature_c == pytest.approx(15.0)
-
-
-def test_one_bad_hour_does_not_relabel_an_otherwise_clear_window() -> None:
-    # Regression: picking the *most severe* code let a single drizzly hour
-    # report the whole afternoon as "Light drizzle", which read as a wet
-    # day when the forecast was mostly clear.
-    timestamps = _hourly_range(12, 18)
-    temperatures = [18.0] * 6
-    codes = [0, 0, 51, 0, 0, 0]  # one drizzly hour amid clear sky
-
-    parts = bucket_day_parts(timestamps, temperatures, codes, [0.0] * 6)
-
-    assert parts[0].summary == "Clear sky"
-
-
-def test_dominant_code_wins_when_the_window_is_genuinely_wet() -> None:
-    timestamps = _hourly_range(12, 18)
-    temperatures = [18.0] * 6
-    codes = [61, 61, 61, 61, 0, 0]  # actually a rainy afternoon
-
-    parts = bucket_day_parts(timestamps, temperatures, codes, [0.0] * 6)
-
-    assert parts[0].summary == "Slight rain"
-
-
-def test_tied_conditions_break_toward_the_more_severe_code() -> None:
-    timestamps = _hourly_range(12, 18)
-    temperatures = [18.0] * 6
-    codes = [0, 0, 0, 61, 61, 61]  # half clear, half rain
-
-    parts = bucket_day_parts(timestamps, temperatures, codes, [0.0] * 6)
-
-    assert parts[0].summary == "Slight rain"
-
-
-def test_precipitation_probability_averages_the_window() -> None:
-    timestamps = _hourly_range(6, 12)
-    temperatures = [10.0] * 6
-    codes = [0] * 6
-
-    parts = bucket_day_parts(timestamps, temperatures, codes, [10.0, 10.0, 20.0, 20.0, 30.0, 30.0])
-
-    assert parts[0].precipitation_probability_pct == 20
-
-
-def test_one_spiky_hour_does_not_set_the_windows_rain_chance() -> None:
-    # Regression: taking the highest hour reported a mostly-dry afternoon
-    # as "65%" because a single hour peaked there.
-    timestamps = _hourly_range(12, 18)
-    temperatures = [18.0] * 6
-    codes = [2] * 6
-
-    parts = bucket_day_parts(timestamps, temperatures, codes, [10.0, 10.0, 65.0, 10.0, 5.0, 5.0])
-
-    assert parts[0].precipitation_probability_pct == 18
-
-
-def test_hours_outside_any_window_are_ignored() -> None:
-    timestamps = _hourly_range(0, 6)  # entirely before "Morning" starts at 6
-    temperatures = [5.0] * 6
-    codes = [0] * 6
-
-    parts = bucket_day_parts(timestamps, temperatures, codes, [0.0] * 6)
-
-    assert parts == ()
-
-
-def test_mismatched_lengths_raise_value_error() -> None:
-    with pytest.raises(ValueError, match="same length"):
-        bucket_day_parts(_hourly_range(6, 12), [10.0], [0], [0.0])
 
 
 def test_strong_onshore_day_counts_as_recent_storm() -> None:
