@@ -178,3 +178,13 @@ def test_days_and_outlook_share_the_card_styling() -> None:
     html = ReportFormatter().format(_report())
     assert '<section class="card day">' in html
     assert '<section class="card outlook">' in html
+
+
+def test_where_to_look_section_is_present_with_sources() -> None:
+    # Static local knowledge, but it makes claims, so it has to cite them.
+    html = ReportFormatter().format(_report())
+    assert "Where to look" in html
+    assert "Lakolk" in html
+    assert "ravpindelag" in html
+    assert "Sources:" in html
+    assert "ravvejr.dk" in html

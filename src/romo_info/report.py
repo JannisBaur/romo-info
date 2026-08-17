@@ -13,6 +13,31 @@ from romo_info.weather import compass_point, is_onshore
 
 _ARROW = {TideDirection.HIGH: "⬆️ High", TideDirection.LOW: "⬇️ Low"}
 
+# Fixed local knowledge -- it doesn't change day to day, so it's baked in
+# rather than fetched. Sourced rather than folklore: see the links below.
+_WHERE_TO_LOOK = """<section class="card tips">
+<h2>Where to look</h2>
+<ul>
+<li><strong>Lakolk</strong>, or the northern end of Sønderstrand — that stretch faces
+due west, so it takes the west and north-westerly storms most squarely. Sønderstrand's
+southern tip swings round towards the south and catches them more obliquely.</li>
+<li>Walk the <strong>wrack lines</strong>, not open sand. Amber is only slightly denser
+than seawater, so it strands alongside everything else of similar density rather than
+sinking where it lands.</li>
+<li>That line is the giveaway: seaweed, twigs, <strong>dark waterlogged wood and
+coal</strong>, shells. Danish hunters call it the <em>ravpindelag</em> — the
+amber-stick layer. Find that band and you're searching the right stripe of beach.</li>
+<li>Diving gulls mark the same debris, for the same reason.</li>
+<li>Best on the <strong>second falling tide after a storm</strong>, and better in winter
+— the storms are bigger, and amber floats more readily in cold, denser water.</li>
+</ul>
+<p class="sources">Sources:
+<a href="https://ravvejr.dk/guide-til-at-finde-rav/">Ravvejr</a>,
+<a href="https://samvirke.dk/artikler/saadan-finder-du-rav">Samvirke</a>,
+<a href="https://danskenaturparker.dk/aktiviteter/saadan-finder-du-rav">Danske Naturparker</a>,
+<a href="https://ravvejr.dk/lakolk-strand/">Ravvejr on Lakolk</a></p>
+</section>"""
+
 _CSS = """
 :root { color-scheme: light dark; }
 body {
@@ -48,6 +73,9 @@ h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
 .card p:last-child { margin-bottom: 0; }
 .card ul { margin: 0 0 0.75rem; padding-left: 1.1rem; }
 .wind { color: #767676; font-size: 0.9rem; }
+.tips ul { margin: 0; padding-left: 1.1rem; }
+.tips li { margin-bottom: 0.5rem; }
+.sources { font-size: 0.8rem; color: #767676; margin-top: 0.9rem; }
 .amber { margin-top: 0.75rem; }
 footer { margin-top: 2rem; color: #767676; font-size: 0.85rem; text-align: center; }
 footer p { margin: 0; }
@@ -82,6 +110,7 @@ class ReportFormatter:
 <h2>Amber storm outlook</h2>
 <p>{outlook}</p>
 </section>
+{_WHERE_TO_LOOK}
 <footer>
 <img class="mascot" src="dog.jpg" width="100" height="100" alt="">
 <p>Generated automatically &middot; data: DMI, open-meteo.com</p>
