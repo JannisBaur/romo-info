@@ -39,10 +39,6 @@ jobs:
         run: poetry install --no-interaction --only main
 
       - name: Build report page
-        env:
-          # Today + tomorrow. The storm outlook's lookahead window starts
-          # after the last reported day, so it shifts along with this.
-          DAYS_TO_REPORT: "2"
         run: poetry run python -m romo_info
 
       - uses: actions/configure-pages@v5
