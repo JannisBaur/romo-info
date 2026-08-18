@@ -115,8 +115,10 @@ def describe(forecast: StargazingForecast | None) -> str:
     if forecast is None or forecast.cloud_cover_pct is None:
         return "\U0001f30c Tonight's cloud forecast is unavailable."
 
-    # En dash reads better than a hyphen for a time range.
-    window = f"{forecast.darkness_from:%H:%M}\u2013{forecast.darkness_to:%H:%M}"
+    # Deliberately not "Dark 21:38-02:00": darkness doesn't end at 02:00,
+    # that's just where we stop looking (see night_window). Saying it as a
+    # range read as though the sky brightened again at two in the morning.
+    starts = f"Dark from {forecast.darkness_from:%H:%M}"
     cover = forecast.cloud_cover_pct
     moon = forecast.moon_illumination_pct
     moon_note = f"moon {moon}% ({forecast.moon_phase})"
@@ -140,7 +142,10 @@ def describe(forecast: StargazingForecast | None) -> str:
             f" Clearest around {forecast.clearest_at:%H:%M}" f" ({forecast.clearest_cover_pct}%)."
         )
 
-    return f"\U0001f30c Dark {window} · {cover}% cloud · {moon_note} — {verdict}.{best}"
+    return (
+        f"\U0001f30c {starts} · {cover}% cloud until "
+        f"{forecast.darkness_to:%H:%M} · {moon_note} — {verdict}.{best}"
+    )
 
 
 def build_forecast(

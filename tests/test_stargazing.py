@@ -195,3 +195,13 @@ def test_a_uniformly_overcast_night_does_not_name_a_clearest_hour() -> None:
     )
 
     assert "Clearest" not in note
+
+
+def test_the_window_is_not_described_as_darkness_ending() -> None:
+    # 02:00 is where we stop looking, not when the sky brightens; phrasing
+    # it as "Dark 21:38-02:00" read as though it got light again at two.
+    note = describe(_forecast(cloud=50, moon=10))
+
+    assert "Dark from 22:00" in note
+    assert "until 05:00" in note
+    assert "Dark 22:00" not in note
