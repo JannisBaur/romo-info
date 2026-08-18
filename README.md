@@ -89,7 +89,12 @@ not duplicated per day, since it's the same forward-looking info regardless
 of which day's section you're reading.
 
 **Stargazing** reports tonight's dark window, the mean cloud cover across
-those hours, and how much of the moon is lit. Moon illumination is
+those hours, how much of the moon is lit, and — when it's meaningfully
+better than the average — the clearest hour, since a mean alone can't tell
+"hazy all night" from "clear until midnight, then closes in". The window
+runs from dusk to **02:00** rather than to sunrise: a summer night here
+lasts until nearly 04:00 and nobody is standing outside for it, so
+including those hours would average in weather no one is going to see. Moon illumination is
 *computed* (`romo_info/stargazing.py`) from the mean synodic month rather
 than fetched — it's a pure astronomical function, accurate to a percent or
 two, which is far finer than "will moonlight drown out the sky tonight?"

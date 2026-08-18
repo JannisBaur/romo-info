@@ -104,7 +104,10 @@ def test_run_includes_storm_outlook_once() -> None:
     publisher = FakeReportPublisher()
     _service(publisher).run()
 
-    assert publisher.published[0].count("Wed 19 Aug") == 1
+    # Match the outlook's own wording, not a bare date: the service builds
+    # day headings from the real clock, so a plain "Wed 19 Aug" also matches
+    # "Tomorrow (Wed 19 Aug)" on the days those happen to coincide.
+    assert publisher.published[0].count("Storm forecast") == 1
 
 
 def test_run_propagates_publisher_failures() -> None:

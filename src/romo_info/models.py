@@ -83,6 +83,10 @@ class StargazingForecast:
     cloud_cover_pct: int | None
     moon_illumination_pct: int
     moon_phase: str
+    # The least cloudy hour in the window. A mean alone can't tell
+    # "hazy all night" from "clear until midnight, then closes in".
+    clearest_at: datetime | None
+    clearest_cover_pct: int | None
 
 
 @dataclass(frozen=True, slots=True)

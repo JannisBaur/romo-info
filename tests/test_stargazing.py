@@ -7,6 +7,7 @@ import pytest
 from romo_info.models import StargazingForecast
 from romo_info.stargazing import (
     build_forecast,
+    clearest_hour,
     describe,
     mean_cloud_cover,
     moon_illumination_fraction,
@@ -15,8 +16,8 @@ from romo_info.stargazing import (
 )
 
 
-def _at(year: int, month: int, day: int, hour: int = 0) -> datetime:
-    return datetime(year, month, day, hour, tzinfo=UTC)
+def _at(year: int, month: int, day: int, hour: int = 0, minute: int = 0) -> datetime:
+    return datetime(year, month, day, hour, minute, tzinfo=UTC)
 
 
 def test_known_new_moon_is_dark() -> None:
@@ -81,13 +82,21 @@ def test_night_window_trims_twilight_from_both_ends() -> None:
     assert end < sunrise
 
 
-def _forecast(*, cloud: int | None, moon: int) -> StargazingForecast:
+def _forecast(
+    *,
+    cloud: int | None,
+    moon: int,
+    clearest_at: datetime | None = None,
+    clearest_cover: int | None = None,
+) -> StargazingForecast:
     return StargazingForecast(
         darkness_from=_at(2026, 8, 17, 22),
         darkness_to=_at(2026, 8, 18, 5),
         cloud_cover_pct=cloud,
         moon_illumination_pct=moon,
         moon_phase="waxing crescent",
+        clearest_at=clearest_at,
+        clearest_cover_pct=clearest_cover,
     )
 
 
@@ -123,3 +132,66 @@ def test_build_forecast_judges_the_moon_mid_night() -> None:
 
     assert forecast.cloud_cover_pct == 30
     assert 0 <= forecast.moon_illumination_pct <= 100
+
+
+def test_night_window_stops_at_the_practical_hour_not_sunrise() -> None:
+    # A August night here runs to nearly 04:00; nobody is out for it, and
+    # averaging cloud over those hours describes a night you aren't having.
+    start, end = night_window(_at(2026, 8, 17, 20, 54), _at(2026, 8, 18, 6, 10))
+
+    assert end.hour == 2
+    assert end.day == 18
+    assert start < end
+
+
+def test_night_window_cap_still_leaves_a_usable_winter_window() -> None:
+    # Sunset ~16:00 in December: darkness starts long before the cap.
+    start, end = night_window(_at(2026, 12, 17, 16, 0), _at(2026, 12, 18, 8, 45))
+
+    assert start.hour == 16
+    assert end.hour == 2
+    assert end > start
+
+
+def test_clearest_hour_finds_the_least_cloudy_hour_in_the_window() -> None:
+    timestamps = [_at(2026, 8, 17, h) for h in range(22, 24)] + [
+        _at(2026, 8, 18, h) for h in range(0, 3)
+    ]
+    covers = [90.0, 80.0, 20.0, 85.0, 95.0]
+
+    best = clearest_hour(timestamps, covers, _at(2026, 8, 17, 22), _at(2026, 8, 18, 2))
+
+    assert best is not None
+    assert best[0] == _at(2026, 8, 18, 0)
+    assert best[1] == 20.0
+
+
+def test_clearest_hour_ignores_hours_outside_the_window() -> None:
+    timestamps = [_at(2026, 8, 18, 4), _at(2026, 8, 17, 23)]
+    covers = [1.0, 60.0]  # the very clear hour is past the 02:00 cap
+
+    best = clearest_hour(timestamps, covers, _at(2026, 8, 17, 22), _at(2026, 8, 18, 2))
+
+    assert best is not None
+    assert best[1] == 60.0
+
+
+def test_clearest_hour_returns_none_for_an_empty_window() -> None:
+    assert clearest_hour([], [], _at(2026, 8, 17, 22), _at(2026, 8, 18, 2)) is None
+
+
+def test_a_meaningfully_clearer_hour_is_named() -> None:
+    note = describe(
+        _forecast(cloud=70, moon=10, clearest_at=_at(2026, 8, 18, 1), clearest_cover=20)
+    )
+
+    assert "Clearest around 01:00 (20%)" in note
+
+
+def test_a_uniformly_overcast_night_does_not_name_a_clearest_hour() -> None:
+    # 95 vs 99 is noise; naming it would imply a window that isn't there.
+    note = describe(
+        _forecast(cloud=99, moon=10, clearest_at=_at(2026, 8, 18, 1), clearest_cover=95)
+    )
+
+    assert "Clearest" not in note
