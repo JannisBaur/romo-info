@@ -113,7 +113,8 @@ def test_prefers_daytime_low_tide_over_overnight_one() -> None:
 
     note = AmberAdvisor().suggest(weather, _MIXED_LOW_TIDES)
 
-    assert "Best on the falling tide, low water ~12:14" in note
+    # No high tide precedes it in this fixture, so only the low is named.
+    assert "Best on the falling tide, down to low water ~12:14" in note
     assert "00:07" not in note
 
 
@@ -187,3 +188,34 @@ def test_near_miss_blow_says_which_day_it_was() -> None:
     note = AmberAdvisor().suggest(weather, _DAYTIME_LOW_TIDE)
 
     assert "32 km/h onshore blow on Sat 15 Aug" in note
+
+
+_FALLING_TIDE_DAY = TideForecast(
+    extremes=(
+        TideExtreme(at=datetime(2026, 8, 19, 1, 23), height_m=0.13, direction=TideDirection.LOW),
+        TideExtreme(at=datetime(2026, 8, 19, 7, 17), height_m=1.83, direction=TideDirection.HIGH),
+        TideExtreme(at=datetime(2026, 8, 19, 13, 33), height_m=0.07, direction=TideDirection.LOW),
+        TideExtreme(at=datetime(2026, 8, 19, 19, 38), height_m=1.94, direction=TideDirection.HIGH),
+    )
+)
+
+
+def test_falling_tide_window_names_its_start_not_just_low_water() -> None:
+    # Danish guidance is to start on the falling water and work down.
+    # Naming only low water read as "turn up at 13:33".
+    weather = _weather(speed_kmh=15.0, recent_storm=True)
+
+    note = AmberAdvisor().suggest(weather, _FALLING_TIDE_DAY)
+
+    assert "from ~07:17 down to low water ~13:33" in note
+
+
+def test_falling_window_starts_at_the_high_tide_immediately_before() -> None:
+    # 19:38 is a later high and 01:23 an earlier low; neither begins the
+    # fall that ends at 13:33.
+    weather = _weather(speed_kmh=15.0, recent_storm=True)
+
+    note = AmberAdvisor().suggest(weather, _FALLING_TIDE_DAY)
+
+    assert "19:38" not in note
+    assert "01:23" not in note
