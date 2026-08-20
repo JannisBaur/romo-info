@@ -17,6 +17,7 @@ romo_info.__main__:main
         ├── OpenMeteoWeatherClient ──► api.open-meteo.com                  (wind)
         ├── AmberAdvisor           ──  rule-based amber-hunting outlook
         ├── stargazing             ──  moon phase (computed) + night cloud
+        ├── meteors                ──  bundled IMO shower calendar (no network)
         ├── ReportFormatter        ──  renders the static HTML page
         └── FileReportPublisher    ──  writes public/index.html
         │
@@ -101,6 +102,23 @@ two, which is far finer than "will moonlight drown out the sky tonight?"
 needs. The page updates **twice a day** for this: forecasting tonight's
 cloud from the morning run means a ~15-hour lead time, where the
 late-afternoon run is nearer four and materially more accurate.
+
+**Meteor showers** come from the International Meteor Organization's
+[2026 Meteor Shower Calendar](https://www.imo.net/files/meteor-shower/cal2026.pdf),
+Table 5, transcribed into `romo_info/meteors.py`. These are astronomical
+predictions, not a forecast, so they're a bundled table like the tide
+data — and like it, **it needs refreshing each year**: the IMO states its
+maximum dates are accurate only for 2026 (activity periods barely move;
+peaks shift a day or so).
+
+Not every shower in that table is listed. Left out on purpose: the two
+daytime showers, radiants too far south to ever rise at 55°N (the
+Puppid-Velids and α-Centaurids never clear the horizon here), anything
+below ZHR 10, and showers the IMO marks "Var" — declining to predict a
+rate is not an invitation to invent one. The line is omitted entirely
+when nothing is running, which is most of the year. Quoted rates say
+"under ideal skies" because ZHR assumes the radiant overhead under a
+perfect sky; real counts are always lower.
 
 ## Setup
 

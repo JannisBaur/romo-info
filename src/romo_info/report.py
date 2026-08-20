@@ -81,6 +81,7 @@ h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
 .sources { font-size: 0.8rem; color: #767676; margin-top: 0.9rem; }
 .disclaimer { font-size: 0.8rem; margin-top: 0.75rem; text-align: left; }
 .requested { font-size: 0.8rem; color: #767676; margin-top: 0.6rem; }
+.meteors { margin-top: 0.6rem; }
 .amber { margin-top: 0.75rem; }
 footer { margin-top: 2rem; color: #767676; font-size: 0.85rem; text-align: center; }
 footer p { margin: 0; }
@@ -99,6 +100,10 @@ class ReportFormatter:
         updated = escape(f"{report.report_date:%A %d %B, %H:%M}")
         outlook = escape(report.storm_outlook_note)
         stargazing = escape(report.stargazing_note)
+        # Rendered only when a shower is actually running.
+        meteors = (
+            f'<p class="meteors">{escape(report.meteor_note)}</p>\n' if report.meteor_note else ""
+        )
         return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -120,7 +125,7 @@ class ReportFormatter:
 <section class="card stars">
 <h2>Stargazing tonight</h2>
 <p>{stargazing}</p>
-<p class="requested">Requested by Pia \U0001f31f</p>
+{meteors}<p class="requested">Requested by Pia \U0001f31f</p>
 </section>
 <footer>
 <img class="mascot" src="dog.jpg" width="100" height="100" alt="">

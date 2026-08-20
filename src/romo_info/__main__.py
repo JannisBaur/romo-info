@@ -31,6 +31,7 @@ def main() -> int:
         amber_advisor=AmberAdvisor(),
         timezone=settings.timezone,
         days_to_report=settings.days_to_report,
+        latitude=settings.latitude,
     )
 
     try:

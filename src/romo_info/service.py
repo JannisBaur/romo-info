@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 
 from romo_info.amber import AmberAdvisor
 from romo_info.clients.protocols import ReportPublisher, TideDataSource, WeatherDataSource
+from romo_info.meteors import describe as describe_meteors
 from romo_info.models import DailyReport, DayForecast
 from romo_info.report import ReportFormatter
 from romo_info.stargazing import describe as describe_stargazing
@@ -41,6 +42,8 @@ class DailyReportService:
     amber_advisor: AmberAdvisor
     timezone: str
     days_to_report: int
+    # Only used to decide whether a shower's radiant rises here.
+    latitude: float
 
     def run(self) -> None:
         tides = self.tide_source.fetch_tide_forecast(self.days_to_report)
@@ -65,6 +68,7 @@ class DailyReportService:
             days=days,
             storm_outlook_note=self.amber_advisor.describe_outlook(storm_outlook),
             stargazing_note=describe_stargazing(stargazing),
+            meteor_note=describe_meteors(now.date(), self.latitude),
         )
         html = self.formatter.format(report)
         self.publisher.publish(html)

@@ -104,3 +104,6 @@ class DailyReport:
     days: tuple[DayForecast, ...]
     storm_outlook_note: str
     stargazing_note: str
+    # Empty for most of the year -- no listed shower is running, and
+    # saying so nightly would be filler.
+    meteor_note: str

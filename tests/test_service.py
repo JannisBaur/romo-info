@@ -50,6 +50,7 @@ def _service(
         amber_advisor=AmberAdvisor(),
         timezone="UTC",
         days_to_report=days_to_report,
+        latitude=55.13,
     )
 
 
