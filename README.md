@@ -1,14 +1,14 @@
 # romo-info
 
 Publishes a daily web page with tide times, wind and tonight's stargazing
-conditions for Rømø, Denmark, plus where to look for amber once you're there. Runs twice a
-day as a scheduled GitHub Actions job and deploys to GitHub Pages — there is no server to host, no
+conditions for Rømø, Denmark, plus where to look for amber once you're there. Rebuilds twice a
+day on a schedule, and on every push, then deploys to GitHub Pages — there is no server to host, no
 credentials to store, and no MCP/LLM agent involved.
 
 ## How it works
 
 ```
-GitHub Actions (cron, twice/day)
+GitHub Actions (cron 2x/day + on push)
         │
         ▼
 romo_info.__main__:main
@@ -113,8 +113,8 @@ perfect sky; real counts are always lower.
    published page is publicly reachable either way — the plan only decides
    whether the *source* may stay private.)
 2. In the repo's **Settings → Pages**, set **Source** to **GitHub Actions**.
-3. In the **Actions** tab, open **Daily Rømø report** → **Run workflow** to
-   trigger it by hand and confirm the page builds and deploys.
+3. In the **Actions** tab, open **Build and deploy page** → **Run workflow**
+   to trigger it by hand and confirm the page builds and deploys.
 4. The published URL appears in the workflow run summary (and under
    Settings → Pages). That's the link to share.
 

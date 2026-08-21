@@ -1,4 +1,4 @@
-name: Daily Rømø report
+name: Build and deploy page
 
 on:
   schedule:
@@ -9,6 +9,12 @@ on:
     # is a ~15-hour lead time, where this is nearer four and materially
     # more accurate.
     - cron: "0 16 * * *"
+  # Also on every push to main: a change to the page template should be
+  # visible without waiting hours for the next cron. Actions minutes are
+  # free on public repositories, and the concurrency group below stops a
+  # push and a scheduled run deploying over each other.
+  push:
+    branches: [main]
   workflow_dispatch: {}
 
 # Deploying to Pages needs these on the default GITHUB_TOKEN -- no
