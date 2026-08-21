@@ -127,9 +127,8 @@ That's the whole setup — no accounts to link, no secrets, no local commands.
   and `"0 16 * * *"`, both UTC; [crontab.guru](https://crontab.guru) helps with conversions).
   GitHub's cron is fixed UTC with no DST awareness, so the local time
   shifts by an hour when Denmark changes clocks.
-- How many days to show: `DAYS_TO_REPORT` (default `1` — today only; set
-  `2` for today + tomorrow, and so on). Set it in the workflow's `env:` for
-  the "Build report page" step.
+- How many days to show: `DAYS_TO_REPORT`. The workflow sets `3`; the
+  code default is `1`. Days past tomorrow are labelled by weekday name.
 - Weather coordinates: `romo_info.config` defaults to central Rømø
   (`LATITUDE=55.13`, `LONGITUDE=8.45`). This only affects the *wind*
   forecast — tide data comes from the fixed Havneby station table.

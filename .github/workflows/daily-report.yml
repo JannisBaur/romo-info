@@ -44,6 +44,11 @@ jobs:
         run: poetry install --no-interaction --only main
 
       - name: Build report page
+        env:
+          # Today plus the next two. Affordable now the page is just
+          # tides and wind per day -- there is no longer a per-day amber
+          # verdict to repeat three times.
+          DAYS_TO_REPORT: "3"
         run: poetry run python -m romo_info
 
       - uses: actions/configure-pages@v5
