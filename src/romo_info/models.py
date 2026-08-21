@@ -26,9 +26,10 @@ class TideForecast:
 class WeatherForecast:
     """Only what the beach actually needs.
 
-    General conditions are left to weather apps, and the amber verdict is
-    left to Ravvejr, who model it properly. Wind stays because it decides
-    whether the beach is pleasant and which way the sea is being pushed.
+    General conditions are left to weather apps, and the amber odds to
+    Ravvejr, who publish a forecast for this beach. Wind stays because it
+    decides whether the beach is pleasant and which way the sea is being
+    pushed.
     """
 
     wind_speed_max_kmh: float

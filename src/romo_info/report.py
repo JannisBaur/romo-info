@@ -17,9 +17,9 @@ _ARROW = {TideDirection.HIGH: "⬆️ High", TideDirection.LOW: "⬇️ Low"}
 # rather than fetched. Sourced rather than folklore: see the links below.
 _WHERE_TO_LOOK = """<section class="card tips">
 <h2>Where to find amber</h2>
-<p class="lead">For today's odds, check
-<a href="https://ravvejr.dk/lakolk-strand/">Ravvejr's 5-day amber forecast for Lakolk</a>
-— they model it properly. Below is just where and how to look once you're there.</p>
+<p class="lead">For odds, check
+<a href="https://ravvejr.dk/lakolk-strand/">Ravvejr's 5-day amber forecast for Lakolk</a>.
+Below is just where and how to look once you're there.</p>
 <ul>
 <li><strong>Lakolk</strong>, or the northern end of Sønderstrand — that stretch faces
 due west, so it takes the west and north-westerly storms most squarely. Sønderstrand's
