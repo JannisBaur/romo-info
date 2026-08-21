@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from html import escape
 
 from romo_info.models import (
@@ -13,13 +14,45 @@ from romo_info.weather import compass_point, is_onshore
 
 # These two earn their place: they distinguish high from low at a
 # glance, where the rest of the page's emoji were decoration applied
-# unevenly. Emoji otherwise appear only on section headings.
+# unevenly. Emoji otherwise appear only on section headings and the
+# jump links that restate them.
 _ARROW = {TideDirection.HIGH: "⬆️ High", TideDirection.LOW: "⬇️ Low"}
+
+
+@dataclass(frozen=True, slots=True)
+class _Section:
+    """One of the page's top-level sections.
+
+    Heading and jump link are rendered from the same entry so a link can
+    never point at a heading that has been renamed out from under it.
+    """
+
+    anchor: str
+    # Pre-escaped: these are fixed strings, not data from an API.
+    title: str
+
+    def heading(self) -> str:
+        return f'<h2 class="group" id="{self.anchor}">{self.title}</h2>'
+
+    def link(self) -> str:
+        return f'<a href="#{self.anchor}">{self.title}</a>'
+
+
+_SECTIONS = (
+    _Section("tides", "\U0001f30a Tides &amp; wind"),
+    _Section("amber", "\U0001f50e Amber"),
+    _Section("stargazing", "\U0001f30c Stargazing"),
+)
+_TIDES, _AMBER, _STARGAZING = _SECTIONS
+
+# Jump links. The page is one long scroll on a phone -- three days of
+# tides push stargazing well below the fold -- and the ids double as
+# shareable deep links (.../#stargazing).
+_NAV = '<nav class="jump">' + "".join(section.link() for section in _SECTIONS) + "</nav>"
 
 # Fixed local knowledge -- it doesn't change day to day, so it's baked in
 # rather than fetched. Sourced rather than folklore: see the links below.
-_WHERE_TO_LOOK = """<h2 class="group">\U0001f50e Amber</h2>
-<section class="card tips">
+_WHERE_TO_LOOK = """<section class="card tips">
 <p class="lead">For odds, check
 <a href="https://ravvejr.dk/lakolk-strand/">Ravvejr's 5-day amber forecast for Lakolk</a>.
 Below is just where and how to look once you're there.</p>
@@ -85,6 +118,17 @@ h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
    Sized between the page title and a card heading, so the hierarchy
    reads h1 > section > card. */
 .group { font-size: 1.25rem; margin: 2rem 0 0.5rem; }
+/* Without this an anchor jump leaves the heading flush against the top
+   edge of the viewport, reading as if it were cut off. */
+.group[id] { scroll-margin-top: 1rem; }
+.jump { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.75rem 0 0; }
+.jump a {
+  border: 1px solid #80808040;
+  border-radius: 999px;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.85rem;
+  text-decoration: none;
+}
 .wind { color: #767676; font-size: 0.9rem; }
 .lead { margin-top: 0; }
 .tips ul { margin: 0; padding-left: 1.1rem; }
@@ -126,10 +170,12 @@ class ReportFormatter:
 <main>
 <h1>\U0001f3dd\ufe0f Rømø info</h1>
 <p class="updated">Updated {updated}</p>
-<h2 class="group">\U0001f30a Tides &amp; wind</h2>
+{_NAV}
+{_TIDES.heading()}
 {days_html}
+{_AMBER.heading()}
 {_WHERE_TO_LOOK}
-<h2 class="group">\U0001f30c Stargazing</h2>
+{_STARGAZING.heading()}
 <section class="card stars">
 <p>{stargazing}</p>
 {meteors}<p class="requested">Requested by Pia</p>

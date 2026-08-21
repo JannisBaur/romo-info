@@ -191,13 +191,22 @@ def test_all_three_sections_are_headed_the_same_way() -> None:
     # label while amber and stargazing carried bold titles inside their
     # cards, so the three sections read as unrelated things.
     html = ReportFormatter().format(_report())
-    for heading in (
-        "\U0001f30a Tides &amp; wind",
-        "\U0001f50e Amber",
-        "\U0001f30c Stargazing",
+    for anchor, heading in (
+        ("tides", "\U0001f30a Tides &amp; wind"),
+        ("amber", "\U0001f50e Amber"),
+        ("stargazing", "\U0001f30c Stargazing"),
     ):
-        assert f'<h2 class="group">{heading}</h2>' in html
+        assert f'<h2 class="group" id="{anchor}">{heading}</h2>' in html
     assert html.index("Tides &amp; wind") < html.index("Amber") < html.index("Stargazing")
+
+
+def test_every_section_has_a_jump_link_pointing_at_it() -> None:
+    # A jump link to an id that no longer exists scrolls nowhere and looks
+    # broken, so pair them explicitly.
+    html = ReportFormatter().format(_report())
+    for anchor in ("tides", "amber", "stargazing"):
+        assert f'<a href="#{anchor}">' in html
+        assert f'id="{anchor}"' in html
 
 
 def test_emoji_appear_only_where_they_carry_meaning() -> None:
@@ -209,7 +218,11 @@ def test_emoji_appear_only_where_they_carry_meaning() -> None:
     body_lines = [
         line
         for line in html.splitlines()
-        if not line.startswith(("<h1>", '<h2 class="group">')) and "tide ~" not in line
+        # The jump nav restates the headings verbatim, emoji included: a
+        # link that doesn't match its destination is worse than one that
+        # repeats it.
+        if not line.startswith(("<h1>", '<h2 class="group"', '<nav class="jump">'))
+        and "tide ~" not in line
     ]
     stray = [line for line in body_lines if any(ord(char) > 0x2100 for char in line)]
     assert stray == []
