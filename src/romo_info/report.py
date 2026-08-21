@@ -75,6 +75,18 @@ h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
 }
 .card p:last-child { margin-bottom: 0; }
 .card ul { margin: 0 0 0.75rem; padding-left: 1.1rem; }
+/* A divider above the day cards, not a title -- they are the only
+   repeated group on the page, so they are the only one that needs
+   saying where it ends. The other sections' own headings already do
+   that job, and labelling them again would repeat the same word one
+   line apart. */
+.group {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #767676;
+  margin: 1.75rem 0 0.5rem;
+}
 .wind { color: #767676; font-size: 0.9rem; }
 .lead { margin-top: 0; }
 .tips ul { margin: 0; padding-left: 1.1rem; }
@@ -116,6 +128,7 @@ class ReportFormatter:
 <main>
 <h1>\U0001f30a Rømø info</h1>
 <p class="updated">Updated {updated}</p>
+<h2 class="group">Tides &amp; wind</h2>
 {days_html}
 {_WHERE_TO_LOOK}
 <section class="card stars">

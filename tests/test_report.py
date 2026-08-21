@@ -184,3 +184,11 @@ def test_page_credits_ravvejr_rather_than_restating_their_forecast() -> None:
     # republish it.
     html = ReportFormatter().format(_report())
     assert "ravvejr.dk/lakolk-strand/" in html
+
+
+def test_day_cards_carry_a_group_label() -> None:
+    # Three near-identical cards in a row need something to say where the
+    # daily data ends; the other sections' own headings already do that.
+    html = ReportFormatter().format(_report())
+    assert '<h2 class="group">Tides &amp; wind</h2>' in html
+    assert html.index("Tides &amp; wind") < html.index("Where to find amber")
