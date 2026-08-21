@@ -11,11 +11,14 @@ from romo_info.models import (
 )
 from romo_info.weather import compass_point, is_onshore
 
+# These two earn their place: they distinguish high from low at a
+# glance, where the rest of the page's emoji were decoration applied
+# unevenly. Emoji otherwise appear only on section headings.
 _ARROW = {TideDirection.HIGH: "⬆️ High", TideDirection.LOW: "⬇️ Low"}
 
 # Fixed local knowledge -- it doesn't change day to day, so it's baked in
 # rather than fetched. Sourced rather than folklore: see the links below.
-_WHERE_TO_LOOK = """<h2 class="group">Amber</h2>
+_WHERE_TO_LOOK = """<h2 class="group">\U0001f50e Amber</h2>
 <section class="card tips">
 <p class="lead">For odds, check
 <a href="https://ravvejr.dk/lakolk-strand/">Ravvejr's 5-day amber forecast for Lakolk</a>.
@@ -121,15 +124,15 @@ class ReportFormatter:
 </head>
 <body>
 <main>
-<h1>\U0001f30a Rømø info</h1>
+<h1>\U0001f3dd\ufe0f Rømø info</h1>
 <p class="updated">Updated {updated}</p>
-<h2 class="group">Tides &amp; wind</h2>
+<h2 class="group">\U0001f30a Tides &amp; wind</h2>
 {days_html}
 {_WHERE_TO_LOOK}
-<h2 class="group">Stargazing</h2>
+<h2 class="group">\U0001f30c Stargazing</h2>
 <section class="card stars">
 <p>{stargazing}</p>
-{meteors}<p class="requested">Requested by Pia \U0001f31f</p>
+{meteors}<p class="requested">Requested by Pia</p>
 </section>
 <footer>
 <img class="mascot" src="dog.jpg" width="100" height="100" alt="">
@@ -161,7 +164,7 @@ official tide tables and local warnings before walking out.</p>
         # outright rather than leaving the reader to decode the bearing.
         shore = "onshore" if is_onshore(weather.wind_direction_deg) else "offshore"
         return (
-            f"\U0001f4a8 Up to {weather.wind_speed_max_kmh:.0f} km/h from "
+            f"Up to {weather.wind_speed_max_kmh:.0f} km/h from "
             f"{compass_point(weather.wind_direction_deg)} "
             f"({weather.wind_direction_deg:.0f}°) — {shore}"
         )

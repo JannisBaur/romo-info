@@ -48,8 +48,8 @@ def _report() -> DailyReport:
                 weather=_weather(),
             ),
         ),
-        stargazing_note="\U0001f30c Dark 22:00\u201305:00 · 10% cloud.",
-        meteor_note="\U0001f320 Perseids peaked Thu 13 Aug, tailing off.",
+        stargazing_note="Dark 22:00\u201305:00 · 10% cloud.",
+        meteor_note="Perseids peaked Thu 13 Aug, tailing off.",
     )
 
 
@@ -105,7 +105,7 @@ def test_text_from_the_report_is_html_escaped() -> None:
                 ),
             ),
             stargazing_note="<script>alert('x')</script> & more",
-            meteor_note="\U0001f320 Perseids peaked Thu 13 Aug, tailing off.",
+            meteor_note="Perseids peaked Thu 13 Aug, tailing off.",
         )
     )
     assert "<script>" not in html
@@ -126,8 +126,8 @@ def test_missing_tide_data_shows_fallback_message() -> None:
         DailyReport(
             report_date=report.report_date,
             days=(empty_tide_today, report.days[1]),
-            stargazing_note="\U0001f30c Dark 22:00\u201305:00 · 10% cloud.",
-            meteor_note="\U0001f320 Perseids peaked Thu 13 Aug, tailing off.",
+            stargazing_note="Dark 22:00\u201305:00 · 10% cloud.",
+            meteor_note="Perseids peaked Thu 13 Aug, tailing off.",
         )
     )
     assert "unavailable" in html.lower()
@@ -191,6 +191,25 @@ def test_all_three_sections_are_headed_the_same_way() -> None:
     # label while amber and stargazing carried bold titles inside their
     # cards, so the three sections read as unrelated things.
     html = ReportFormatter().format(_report())
-    for heading in ("Tides &amp; wind", "Amber", "Stargazing"):
+    for heading in (
+        "\U0001f30a Tides &amp; wind",
+        "\U0001f50e Amber",
+        "\U0001f30c Stargazing",
+    ):
         assert f'<h2 class="group">{heading}</h2>' in html
     assert html.index("Tides &amp; wind") < html.index("Amber") < html.index("Stargazing")
+
+
+def test_emoji_appear_only_where_they_carry_meaning() -> None:
+    # One rule, so the page doesn't look like it was decorated at random:
+    # emoji mark the page title and the three section headings, plus the
+    # tide arrows, which distinguish high from low at a glance. Body text
+    # carries none.
+    html = ReportFormatter().format(_report())
+    body_lines = [
+        line
+        for line in html.splitlines()
+        if not line.startswith(("<h1>", '<h2 class="group">')) and "tide ~" not in line
+    ]
+    stray = [line for line in body_lines if any(ord(char) > 0x2100 for char in line)]
+    assert stray == []

@@ -146,6 +146,6 @@ def describe(on: date, latitude_deg: float) -> str:
     # "under ideal skies" is not hedging -- ZHR assumes the radiant
     # overhead and a perfectly dark sky, so the real count is always lower.
     return (
-        f"\U0001f320 {best.name} {timing} — up to {best.zhr}/hour under ideal"
+        f"{best.name} {timing} — up to {best.zhr}/hour under ideal"
         f" skies, running to {date(on.year, *best.end):%d %b}.{others}"
     )

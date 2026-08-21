@@ -113,7 +113,7 @@ def clearest_hour(
 def describe(forecast: StargazingForecast | None) -> str:
     """One line on whether tonight is worth going out for."""
     if forecast is None or forecast.cloud_cover_pct is None:
-        return "\U0001f30c Tonight's cloud forecast is unavailable."
+        return "Tonight's cloud forecast is unavailable."
 
     # Deliberately not "Dark 21:38-02:00": darkness doesn't end at 02:00,
     # that's just where we stop looking (see night_window). Saying it as a
@@ -143,7 +143,7 @@ def describe(forecast: StargazingForecast | None) -> str:
         )
 
     return (
-        f"\U0001f30c {starts} · {cover}% cloud until "
+        f"{starts} · {cover}% cloud until "
         f"{forecast.darkness_to:%H:%M} · {moon_note} — {verdict}.{best}"
     )
 
