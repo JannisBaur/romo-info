@@ -62,7 +62,6 @@ class DayForecast:
     label: str
     tide: TideForecast
     weather: WeatherForecast
-    tide_note: str
 
 
 @dataclass(frozen=True, slots=True)

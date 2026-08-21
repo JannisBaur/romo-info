@@ -38,7 +38,6 @@ def _report() -> DailyReport:
                 label="Today",
                 tide=_tide(),
                 weather=_weather(),
-                tide_note="Falling tide from ~03:00 down to low water ~09:00.",
             ),
             DayForecast(
                 for_date=date(2026, 8, 17),
@@ -47,7 +46,6 @@ def _report() -> DailyReport:
                     extremes=(TideExtreme(datetime(2026, 8, 17, 4, 0), 1.9, TideDirection.HIGH),)
                 ),
                 weather=_weather(),
-                tide_note="Falling tide down to low water ~10:00.",
             ),
         ),
         stargazing_note="\U0001f30c Dark 22:00\u201305:00 · 10% cloud.",
@@ -104,10 +102,9 @@ def test_text_from_the_report_is_html_escaped() -> None:
                     label=today.label,
                     tide=today.tide,
                     weather=today.weather,
-                    tide_note="<script>alert('x')</script> & more",
                 ),
             ),
-            stargazing_note="\U0001f30c Dark 22:00\u201305:00 · 10% cloud.",
+            stargazing_note="<script>alert('x')</script> & more",
             meteor_note="\U0001f320 Perseids peaked Thu 13 Aug, tailing off.",
         )
     )
@@ -124,7 +121,6 @@ def test_missing_tide_data_shows_fallback_message() -> None:
         label=today.label,
         tide=TideForecast(extremes=()),
         weather=today.weather,
-        tide_note=today.tide_note,
     )
     html = ReportFormatter().format(
         DailyReport(

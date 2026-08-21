@@ -10,7 +10,6 @@ from romo_info.meteors import describe as describe_meteors
 from romo_info.models import DailyReport, DayForecast
 from romo_info.report import ReportFormatter
 from romo_info.stargazing import describe as describe_stargazing
-from romo_info.tide import falling_tide_note
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +54,6 @@ class DailyReportService:
                 label=_label_for(offset, now.date() + timedelta(days=offset)),
                 tide=tides[offset],
                 weather=weathers[offset],
-                tide_note=falling_tide_note(tides[offset]),
             )
             for offset in range(self.days_to_report)
         )

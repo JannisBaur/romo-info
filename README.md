@@ -64,10 +64,9 @@ rule-based verdict and a five-day storm outlook; both are gone. Ravvejr
 publishes an actual modelled [five-day amber forecast for
 Lakolk](https://ravvejr.dk/lakolk-strand/), and a hand-rolled heuristic
 sitting next to it just gives the reader two verdicts with no way to
-choose between them — worse than one good one. The page links to theirs
-and keeps only what is genuinely its own: the **falling-tide window**,
-derived from the bundled DMI table, and the static advice on where and
-how to search.
+choose between them — worse than one good one. The page links to theirs and
+keeps only the static advice on where and how to search — the tide list
+itself already shows when the water is on its way out.
 
 That advice is sourced rather than folklore: amber reaches this coast
 when a storm loosens it from the seabed and calmer weather then washes it

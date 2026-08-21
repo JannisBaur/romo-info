@@ -76,7 +76,6 @@ h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
 .card p:last-child { margin-bottom: 0; }
 .card ul { margin: 0 0 0.75rem; padding-left: 1.1rem; }
 .wind { color: #767676; font-size: 0.9rem; }
-.window { margin: 0 0 0.75rem; }
 .lead { margin-top: 0; }
 .tips ul { margin: 0; padding-left: 1.1rem; }
 .tips li { margin-bottom: 0.5rem; }
@@ -138,14 +137,11 @@ official tide tables and local warnings before walking out.</p>
 """
 
     def _format_day(self, day: DayForecast) -> str:
-        # The falling-tide window sits with the tides it is derived from.
-        window = f'<p class="window">{escape(day.tide_note)}</p>\n' if day.tide_note else ""
         return (
             f'<section class="card day">\n'
             f"<h2>{escape(day.label)} ({day.for_date:%a %d %b})</h2>\n"
             f"<h3>Tides</h3>\n"
             f"<ul>{self._format_tide_lines(day.tide)}</ul>\n"
-            f"{window}"
             f"<h3>Wind</h3>\n"
             f'<p class="wind">{self._format_wind(day.weather)}</p>\n'
             f"</section>"
