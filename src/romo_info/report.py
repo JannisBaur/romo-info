@@ -61,9 +61,9 @@ h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
   border-radius: 50%;
   margin: 0 auto 0.75rem;
 }
-/* Days and the storm outlook are peers, so they share one card style --
-   otherwise the outlook's h2 falls back to the browser default and reads
-   as a page-level heading rather than another section. */
+/* Every section is a peer, so they share one card style -- otherwise a
+   section's h2 falls back to the browser default and reads as a
+   page-level heading rather than another section. */
 .card { border: 1px solid #80808040; border-radius: 12px; padding: 1rem 1.25rem; margin: 1rem 0; }
 .card h2 { margin-top: 0; font-size: 1.15rem; }
 .card h3 {
@@ -110,12 +110,12 @@ class ReportFormatter:
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Rømø tides &amp; amber</title>
+<title>Rømø info</title>
 <style>{_CSS}</style>
 </head>
 <body>
 <main>
-<h1>\U0001f30a Rømø tides &amp; amber</h1>
+<h1>\U0001f30a Rømø info</h1>
 <p class="updated">Updated {updated}</p>
 {days_html}
 {_WHERE_TO_LOOK}
