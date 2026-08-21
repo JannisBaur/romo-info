@@ -4,7 +4,6 @@ from typing import Protocol
 
 from romo_info.models import (
     StargazingForecast,
-    StormOutlook,
     TideForecast,
     WeatherForecast,
 )
@@ -19,9 +18,9 @@ class TideDataSource(Protocol):
 class WeatherDataSource(Protocol):
     def fetch_weather_forecast(
         self, days: int
-    ) -> tuple[tuple[WeatherForecast, ...], StormOutlook, StargazingForecast | None]:
+    ) -> tuple[tuple[WeatherForecast, ...], StargazingForecast | None]:
         """Returns (`days` consecutive WeatherForecast entries starting
-        today, storm_outlook, tonight's stargazing conditions).
+        today, tonight's stargazing conditions).
         """
         ...
 

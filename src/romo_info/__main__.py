@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 import sys
 
-from romo_info.amber import AmberAdvisor
 from romo_info.clients.dmi_tide import DmiTideTableClient
 from romo_info.clients.file_publisher import FileReportPublisher
 from romo_info.clients.open_meteo import OpenMeteoWeatherClient
@@ -28,7 +27,6 @@ def main() -> int:
         ),
         publisher=FileReportPublisher(settings.output_path),
         formatter=ReportFormatter(),
-        amber_advisor=AmberAdvisor(),
         timezone=settings.timezone,
         days_to_report=settings.days_to_report,
         latitude=settings.latitude,

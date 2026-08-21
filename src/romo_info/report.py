@@ -17,6 +17,9 @@ _ARROW = {TideDirection.HIGH: "⬆️ High", TideDirection.LOW: "⬇️ Low"}
 # rather than fetched. Sourced rather than folklore: see the links below.
 _WHERE_TO_LOOK = """<section class="card tips">
 <h2>Where to find amber</h2>
+<p class="lead">For today's odds, check
+<a href="https://ravvejr.dk/lakolk-strand/">Ravvejr's 5-day amber forecast for Lakolk</a>
+— they model it properly. Below is just where and how to look once you're there.</p>
 <ul>
 <li><strong>Lakolk</strong>, or the northern end of Sønderstrand — that stretch faces
 due west, so it takes the west and north-westerly storms most squarely. Sønderstrand's
@@ -30,9 +33,6 @@ amber-stick layer. Find that band and you're searching the right stripe of beach
 <li>Diving gulls mark the same debris, for the same reason.</li>
 <li>Best on the <strong>second falling tide after a storm</strong>, and better in winter
 — the storms are bigger, and amber floats more readily in cold, denser water.</li>
-<li>For an actual scored amber forecast for this beach, check
-<a href="https://ravvejr.dk/lakolk-strand/">Ravvejr's Lakolk page</a> — they model it
-properly. The outlook above is only a rule of thumb built from wind and tide.</li>
 </ul>
 <p class="sources">Sources:
 <a href="https://ravvejr.dk/guide-til-at-finde-rav/">Ravvejr</a>,
@@ -76,6 +76,8 @@ h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
 .card p:last-child { margin-bottom: 0; }
 .card ul { margin: 0 0 0.75rem; padding-left: 1.1rem; }
 .wind { color: #767676; font-size: 0.9rem; }
+.window { margin: 0 0 0.75rem; }
+.lead { margin-top: 0; }
 .tips ul { margin: 0; padding-left: 1.1rem; }
 .tips li { margin-bottom: 0.5rem; }
 .sources { font-size: 0.8rem; color: #767676; margin-top: 0.9rem; }
@@ -98,7 +100,6 @@ class ReportFormatter:
     def format(self, report: DailyReport) -> str:
         days_html = "\n".join(self._format_day(day) for day in report.days)
         updated = escape(f"{report.report_date:%A %d %B, %H:%M}")
-        outlook = escape(report.storm_outlook_note)
         stargazing = escape(report.stargazing_note)
         # Rendered only when a shower is actually running.
         meteors = (
@@ -117,10 +118,6 @@ class ReportFormatter:
 <h1>\U0001f30a Rømø tides &amp; amber</h1>
 <p class="updated">Updated {updated}</p>
 {days_html}
-<section class="card outlook">
-<h2>Amber storm outlook</h2>
-<p>{outlook}</p>
-</section>
 {_WHERE_TO_LOOK}
 <section class="card stars">
 <h2>Stargazing tonight</h2>
@@ -133,8 +130,7 @@ class ReportFormatter:
 <p class="disclaimer">Personal hobby page, not affiliated with DMI, Open-Meteo or
 Ravvejr. Tide and wind figures are model predictions and this is <strong>not a safety
 tool</strong> — the Wadden Sea flats flood quickly and cut off routes back, so check
-official tide tables and local warnings before walking out. The amber note is a rule of
-thumb, not a forecast.</p>
+official tide tables and local warnings before walking out.</p>
 </footer>
 </main>
 </body>
@@ -142,15 +138,16 @@ thumb, not a forecast.</p>
 """
 
     def _format_day(self, day: DayForecast) -> str:
+        # The falling-tide window sits with the tides it is derived from.
+        window = f'<p class="window">{escape(day.tide_note)}</p>\n' if day.tide_note else ""
         return (
             f'<section class="card day">\n'
             f"<h2>{escape(day.label)} ({day.for_date:%a %d %b})</h2>\n"
             f"<h3>Tides</h3>\n"
             f"<ul>{self._format_tide_lines(day.tide)}</ul>\n"
+            f"{window}"
             f"<h3>Wind</h3>\n"
             f'<p class="wind">{self._format_wind(day.weather)}</p>\n'
-            f"<h3>Amber hunting</h3>\n"
-            f'<p class="amber">{escape(day.amber_note)}</p>\n'
             f"</section>"
         )
 

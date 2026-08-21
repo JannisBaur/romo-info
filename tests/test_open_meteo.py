@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from datetime import date
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -13,21 +14,21 @@ from romo_info.clients.open_meteo import (
     OpenMeteoClientError,
     OpenMeteoWeatherClient,
 )
-from romo_info.models import StormOutlook, WeatherForecast
+from romo_info.models import WeatherForecast
 
 _ZONE = ZoneInfo("Europe/Copenhagen")
 _TODAY = date(2026, 8, 16)
 # Matches the client's real days=2, _STORM_LOOKAHEAD_DAYS=5 combination --
 # the fixture payload below is shaped for exactly this window.
 _DAYS = 2
-_FORECAST_DAYS_TOTAL = _DAYS + 5
+_FORECAST_DAYS_TOTAL = _DAYS + 1
 
 
-def _parse(payload: dict[str, Any]) -> tuple[WeatherForecast, WeatherForecast, StormOutlook]:
-    (today, tomorrow), outlook, _stars = OpenMeteoWeatherClient._parse_response(
+def _parse(payload: dict[str, Any]) -> tuple[WeatherForecast, WeatherForecast]:
+    (today, tomorrow), _stars = OpenMeteoWeatherClient._parse_response(
         payload, _TODAY, _DAYS, _FORECAST_DAYS_TOTAL, _ZONE
     )
-    return today, tomorrow, outlook
+    return today, tomorrow
 
 
 # past_days=3 + forecast_days=7 means 10 days of daily data (3 past, today,
@@ -161,81 +162,10 @@ def test_persistent_connection_errors_exhaust_all_attempts() -> None:
 
 
 def test_fetch_weather_forecast_uses_correct_daily_values_per_day() -> None:
-    today, tomorrow, _outlook = _parse(_SUCCESS_PAYLOAD)
+    today, tomorrow = _parse(_SUCCESS_PAYLOAD)
 
     assert today.wind_speed_max_kmh == 60.0
     assert tomorrow.wind_speed_max_kmh == 20.0
-
-
-def test_storm_on_today_only_counts_as_recent_for_tomorrow() -> None:
-    today, tomorrow, _outlook = _parse(_SUCCESS_PAYLOAD)
-
-    assert today.recent_onshore_storm is False
-    assert tomorrow.recent_onshore_storm is True
-
-
-def test_upcoming_storm_beyond_tomorrow_is_flagged_once_for_the_whole_report() -> None:
-    _today, _tomorrow, outlook = _parse(_SUCCESS_PAYLOAD)
-
-    assert outlook.upcoming_storm_date == date(2026, 8, 19)
-
-
-def test_lookback_days_differ_between_today_and_tomorrow() -> None:
-    today, tomorrow, _outlook = _parse(_SUCCESS_PAYLOAD)
-
-    # Today looks back over exactly the 3 fetched past days; tomorrow's
-    # window is one day longer since today itself counts as "past" for it.
-    assert today.recent_storm_lookback_days == 3
-    assert tomorrow.recent_storm_lookback_days == 4
-
-
-def test_lookahead_reaches_the_end_of_the_requested_forecast_window() -> None:
-    _today, _tomorrow, outlook = _parse(_SUCCESS_PAYLOAD)
-
-    # forecast_days=7 starting from today (the 16th) reaches through the 22nd.
-    assert outlook.lookahead_through == date(2026, 8, 22)
-
-
-def test_strongest_onshore_wiring_matches_the_qualifying_storm_when_one_exists() -> None:
-    # The 16th (60 km/h onshore) is the only onshore day in tomorrow's past
-    # window, and the 19th (65 km/h onshore) is the only onshore day in the
-    # future window -- both already qualify as full storms, so the
-    # "strongest onshore" fields should just point at the same day.
-    _today, tomorrow, outlook = _parse(_SUCCESS_PAYLOAD)
-
-    assert tomorrow.recent_strongest_onshore_kmh == 60.0
-    assert outlook.strongest_onshore_date == date(2026, 8, 19)
-    assert outlook.strongest_onshore_wind_kmh == 65.0
-
-
-def test_strongest_onshore_is_none_when_no_onshore_wind_in_the_window() -> None:
-    # Today's past window (13th-15th) is entirely offshore (due east).
-    today, _tomorrow, _outlook = _parse(_SUCCESS_PAYLOAD)
-
-    assert today.recent_strongest_onshore_kmh is None
-
-
-def test_days_argument_shifts_which_days_count_as_future_outlook() -> None:
-    # The 17th is a strong onshore day. With days=2 it's fully reported
-    # (not part of the future outlook window), so no upcoming storm is
-    # flagged; with days=1, it falls into the future window instead.
-    payload = {
-        "daily": {
-            "time": ["2026-08-16", "2026-08-17", "2026-08-18"],
-            "wind_speed_10m_max": [10.0, 70.0, 10.0],
-            "wind_direction_10m_dominant": [90.0, 250.0, 90.0],
-        },
-    }
-
-    (_today, _tomorrow), outlook_2_days, _s2 = OpenMeteoWeatherClient._parse_response(
-        payload, date(2026, 8, 16), 2, 2 + 5, _ZONE
-    )
-    assert outlook_2_days.upcoming_storm_date is None
-
-    (_today_only,), outlook_1_day, _s1 = OpenMeteoWeatherClient._parse_response(
-        payload, date(2026, 8, 16), 1, 1 + 5, _ZONE
-    )
-    assert outlook_1_day.upcoming_storm_date == date(2026, 8, 17)
 
 
 def test_forecast_days_request_param_scales_with_days_argument() -> None:
@@ -248,10 +178,15 @@ def test_forecast_days_request_param_scales_with_days_argument() -> None:
     with respx.mock:
         respx.get(FORECAST_API_URL).mock(side_effect=capture)
         client = OpenMeteoWeatherClient(latitude=55.1, longitude=8.5, timezone="UTC")
-        client.fetch_weather_forecast(3)
+        # Only the outgoing request matters here. Parsing needs the fixture
+        # to span today, which depends on the real clock, so don't make
+        # this assertion hostage to what day it is run.
+        with suppress(OpenMeteoClientError):
+            client.fetch_weather_forecast(3)
 
-    # 3 fully-reported days + the fixed 5-day storm lookahead.
-    assert captured["forecast_days"] == "8"
+    # 3 fully-reported days + one extra so tonight's window can reach
+    # tomorrow's sunrise.
+    assert captured["forecast_days"] == "4"
 
 
 @respx.mock
@@ -261,14 +196,6 @@ def test_fetch_weather_forecast_raises_on_malformed_payload() -> None:
 
     with pytest.raises(OpenMeteoClientError):
         client.fetch_weather_forecast(1)
-
-
-def test_recent_strongest_onshore_day_carries_its_date() -> None:
-    # The 16th is the only onshore day in tomorrow's past window.
-    _today, tomorrow, _outlook = _parse(_SUCCESS_PAYLOAD)
-
-    assert tomorrow.recent_strongest_onshore_kmh == 60.0
-    assert tomorrow.recent_strongest_onshore_date == date(2026, 8, 16)
 
 
 # Exactly the shape Open-Meteo returns when a timezone is requested: local
@@ -295,8 +222,8 @@ _TONIGHT_PAYLOAD = {
 
 
 def test_tonight_is_parsed_from_naive_local_times() -> None:
-    _days, _outlook, tonight = OpenMeteoWeatherClient._parse_response(
-        _TONIGHT_PAYLOAD, date(2026, 8, 17), 1, 1 + 5, _ZONE
+    _days, tonight = OpenMeteoWeatherClient._parse_response(
+        _TONIGHT_PAYLOAD, date(2026, 8, 17), 1, 1 + 1, _ZONE
     )
 
     assert tonight is not None
@@ -309,8 +236,8 @@ def test_tonight_is_parsed_from_naive_local_times() -> None:
 
 
 def test_tonight_averages_only_the_dark_hours() -> None:
-    _days, _outlook, tonight = OpenMeteoWeatherClient._parse_response(
-        _TONIGHT_PAYLOAD, date(2026, 8, 17), 1, 1 + 5, _ZONE
+    _days, tonight = OpenMeteoWeatherClient._parse_response(
+        _TONIGHT_PAYLOAD, date(2026, 8, 17), 1, 1 + 1, _ZONE
     )
 
     assert tonight is not None
@@ -333,13 +260,12 @@ def test_a_broken_stargazing_payload_does_not_sink_the_report() -> None:
         },
     }
 
-    days, outlook, tonight = OpenMeteoWeatherClient._parse_response(
-        payload, date(2026, 8, 17), 1, 1 + 5, _ZONE
+    days, tonight = OpenMeteoWeatherClient._parse_response(
+        payload, date(2026, 8, 17), 1, 1 + 1, _ZONE
     )
 
     assert tonight is None
     assert len(days) == 1
-    assert outlook is not None
 
 
 def test_missing_sun_times_degrade_to_no_stargazing_note() -> None:
@@ -351,8 +277,8 @@ def test_missing_sun_times_degrade_to_no_stargazing_note() -> None:
         },
     }
 
-    _days, _outlook, tonight = OpenMeteoWeatherClient._parse_response(
-        payload, date(2026, 8, 17), 1, 1 + 5, _ZONE
+    _days, tonight = OpenMeteoWeatherClient._parse_response(
+        payload, date(2026, 8, 17), 1, 1 + 1, _ZONE
     )
 
     assert tonight is None

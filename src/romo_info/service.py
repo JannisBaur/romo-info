@@ -5,12 +5,12 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from romo_info.amber import AmberAdvisor
 from romo_info.clients.protocols import ReportPublisher, TideDataSource, WeatherDataSource
 from romo_info.meteors import describe as describe_meteors
 from romo_info.models import DailyReport, DayForecast
 from romo_info.report import ReportFormatter
 from romo_info.stargazing import describe as describe_stargazing
+from romo_info.tide import falling_tide_note
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,6 @@ class DailyReportService:
     weather_source: WeatherDataSource
     publisher: ReportPublisher
     formatter: ReportFormatter
-    amber_advisor: AmberAdvisor
     timezone: str
     days_to_report: int
     # Only used to decide whether a shower's radiant rises here.
@@ -47,9 +46,7 @@ class DailyReportService:
 
     def run(self) -> None:
         tides = self.tide_source.fetch_tide_forecast(self.days_to_report)
-        weathers, storm_outlook, stargazing = self.weather_source.fetch_weather_forecast(
-            self.days_to_report
-        )
+        weathers, stargazing = self.weather_source.fetch_weather_forecast(self.days_to_report)
         now = datetime.now(ZoneInfo(self.timezone))
 
         days = tuple(
@@ -58,7 +55,7 @@ class DailyReportService:
                 label=_label_for(offset, now.date() + timedelta(days=offset)),
                 tide=tides[offset],
                 weather=weathers[offset],
-                amber_note=self.amber_advisor.suggest(weathers[offset], tides[offset]),
+                tide_note=falling_tide_note(tides[offset]),
             )
             for offset in range(self.days_to_report)
         )
@@ -66,7 +63,6 @@ class DailyReportService:
         report = DailyReport(
             report_date=now,
             days=days,
-            storm_outlook_note=self.amber_advisor.describe_outlook(storm_outlook),
             stargazing_note=describe_stargazing(stargazing),
             meteor_note=describe_meteors(now.date(), self.latitude),
         )

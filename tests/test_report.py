@@ -13,14 +13,10 @@ from romo_info.models import (
 from romo_info.report import ReportFormatter
 
 
-def _weather(*, storm: bool = True) -> WeatherForecast:
+def _weather() -> WeatherForecast:
     return WeatherForecast(
         wind_speed_max_kmh=22.0,
         wind_direction_deg=250.0,
-        recent_onshore_storm=storm,
-        recent_storm_lookback_days=3,
-        recent_strongest_onshore_kmh=None,
-        recent_strongest_onshore_date=None,
     )
 
 
@@ -42,9 +38,7 @@ def _report() -> DailyReport:
                 label="Today",
                 tide=_tide(),
                 weather=_weather(),
-                amber_note=(
-                    "Good conditions — strong onshore wind. Best around low tide (~09:00)."
-                ),
+                tide_note="Falling tide from ~03:00 down to low water ~09:00.",
             ),
             DayForecast(
                 for_date=date(2026, 8, 17),
@@ -52,11 +46,10 @@ def _report() -> DailyReport:
                 tide=TideForecast(
                     extremes=(TideExtreme(datetime(2026, 8, 17, 4, 0), 1.9, TideDirection.HIGH),)
                 ),
-                weather=_weather(storm=False),
-                amber_note="No recent storm to loosen amber, less likely tomorrow.",
+                weather=_weather(),
+                tide_note="Falling tide down to low water ~10:00.",
             ),
         ),
-        storm_outlook_note="\U0001f52e No storm forecast through Sat 22 Aug.",
         stargazing_note="\U0001f30c Dark 22:00\u201305:00 · 10% cloud.",
         meteor_note="\U0001f320 Perseids peaked Thu 13 Aug, tailing off.",
     )
@@ -97,19 +90,6 @@ def test_general_conditions_are_not_reported() -> None:
     assert "Afternoon" not in html
 
 
-def test_amber_notes_for_both_days_are_included() -> None:
-    html = ReportFormatter().format(_report())
-    assert "Amber hunting" in html
-    assert "strong onshore wind" in html
-    assert "No recent storm" in html
-
-
-def test_storm_outlook_appears_once_not_per_day() -> None:
-    html = ReportFormatter().format(_report())
-    assert html.count("No storm forecast through Sat 22 Aug") == 1
-    assert "Amber storm outlook" in html
-
-
 def test_text_from_the_report_is_html_escaped() -> None:
     # Nothing in the pipeline produces markup today, but the formatter must
     # not become an injection point if a data source ever returns "<" or "&".
@@ -124,10 +104,9 @@ def test_text_from_the_report_is_html_escaped() -> None:
                     label=today.label,
                     tide=today.tide,
                     weather=today.weather,
-                    amber_note="<script>alert('x')</script> & more",
+                    tide_note="<script>alert('x')</script> & more",
                 ),
             ),
-            storm_outlook_note=report.storm_outlook_note,
             stargazing_note="\U0001f30c Dark 22:00\u201305:00 · 10% cloud.",
             meteor_note="\U0001f320 Perseids peaked Thu 13 Aug, tailing off.",
         )
@@ -145,13 +124,12 @@ def test_missing_tide_data_shows_fallback_message() -> None:
         label=today.label,
         tide=TideForecast(extremes=()),
         weather=today.weather,
-        amber_note=today.amber_note,
+        tide_note=today.tide_note,
     )
     html = ReportFormatter().format(
         DailyReport(
             report_date=report.report_date,
             days=(empty_tide_today, report.days[1]),
-            storm_outlook_note=report.storm_outlook_note,
             stargazing_note="\U0001f30c Dark 22:00\u201305:00 · 10% cloud.",
             meteor_note="\U0001f320 Perseids peaked Thu 13 Aug, tailing off.",
         )
@@ -178,12 +156,13 @@ def test_wind_direction_and_shore_are_reported() -> None:
     assert "onshore" in html
 
 
-def test_days_and_outlook_share_the_card_styling() -> None:
-    # They are peers on the page. Without the shared class the outlook's
-    # h2 falls back to the browser default and dwarfs the day headings.
+def test_all_sections_share_the_card_styling() -> None:
+    # They are peers on the page. Without the shared class a section's h2
+    # falls back to the browser default and dwarfs the day headings.
     html = ReportFormatter().format(_report())
     assert '<section class="card day">' in html
-    assert '<section class="card outlook">' in html
+    assert '<section class="card tips">' in html
+    assert '<section class="card stars">' in html
 
 
 def test_where_to_look_section_is_present_with_sources() -> None:
@@ -209,11 +188,3 @@ def test_page_credits_ravvejr_rather_than_restating_their_forecast() -> None:
     # republish it.
     html = ReportFormatter().format(_report())
     assert "ravvejr.dk/lakolk-strand/" in html
-
-
-def test_amber_sections_are_grouped_before_the_sky_section() -> None:
-    # "Where to find amber" sitting after Stargazing read as sky advice and
-    # split the amber content in two.
-    html = ReportFormatter().format(_report())
-    assert html.index("Amber storm outlook") < html.index("Where to find amber")
-    assert html.index("Where to find amber") < html.index("Stargazing tonight")

@@ -1,7 +1,7 @@
 # romo-info
 
-Publishes a daily web page with tide times, wind, an amber-hunting
-outlook and tonight's stargazing conditions for Rømø, Denmark. Runs twice a
+Publishes a daily web page with tide times, wind and tonight's stargazing
+conditions for Rømø, Denmark, plus where to look for amber once you're there. Runs twice a
 day as a scheduled GitHub Actions job and deploys to GitHub Pages — there is no server to host, no
 credentials to store, and no MCP/LLM agent involved.
 
@@ -15,7 +15,6 @@ romo_info.__main__:main
         │
         ├── DmiTideTableClient     ──  bundled DMI Havneby tide table (no network)
         ├── OpenMeteoWeatherClient ──► api.open-meteo.com                  (wind)
-        ├── AmberAdvisor           ──  rule-based amber-hunting outlook
         ├── stargazing             ──  moon phase (computed) + night cloud
         ├── meteors                ──  bundled IMO shower calendar (no network)
         ├── ReportFormatter        ──  renders the static HTML page
@@ -55,39 +54,27 @@ by reporting that window's peak chance of rain as if it applied all
 afternoon. Wind stays in full -- speed, bearing, and whether that bearing is
 onshore -- because it is amber information: an onshore blow pushes
 loosened amber towards the beach where an offshore one of the same
-strength does not. `is_onshore` shares its bounds with the storm checks,
-so the direction shown can't drift out of step with the rules the amber
-advice applies. Only daily wind is fetched, so no
-hourly series is requested at all. Transient network failures are retried
+strength does not. Only daily wind is fetched, so no hourly series is
+requested beyond the cloud cover the stargazing note needs. Transient network failures are retried
 (3 attempts with backoff) so one dropped connection doesn't cost the day's
 report.
 
-**Amber-hunting outlook** is a small deterministic rule
-(`romo_info/amber.py` + `romo_info/weather.had_recent_onshore_storm`), based
-on how amber actually reaches Denmark's North Sea coast: a storm (onshore,
-classically from the SW) loosens it from the seabed first, then it washes
-ashore during the *calmer* weather that follows, easiest to spot on the
-beach exposed by the falling tide. So it checks the past 3 days for a
-strong onshore blow, not just today's wind — a same-day-only check would
-get this backwards. No AI/LLM call involved — this is domain knowledge
-expressed as a plain, tested, free rule, not a judgment call that needs an
-API key. (Verified against multiple Danish West Coast amber-hunting
-sources — this differs from the "onshore wind blows it ashore" folklore
-more commonly cited for Baltic Sea amber coasts, which don't apply to
-Rømø's North Sea side.) The wind thresholds — >16 m/s (~58 km/h) to stir
-amber loose, <10 m/s (~36 km/h) to be calm enough to search — come from
-those same sources rather than being guessed. A strong onshore day that
-*misses* the storm threshold is still reported as a near miss rather than
-being silently discarded.
+**Amber odds are deliberately not computed here.** There used to be a
+rule-based verdict and a five-day storm outlook; both are gone. Ravvejr
+publishes an actual modelled [five-day amber forecast for
+Lakolk](https://ravvejr.dk/lakolk-strand/), and a hand-rolled heuristic
+sitting next to it just gives the reader two verdicts with no way to
+choose between them — worse than one good one. The page links to theirs
+and keeps only what is genuinely its own: the **falling-tide window**,
+derived from the bundled DMI table, and the static advice on where and
+how to search.
 
-The page also carries a report-wide storm outlook
-(`romo_info.weather.next_onshore_storm`) looking 5 days past the last
-reported day, purely to flag an *upcoming* onshore storm worth planning
-around — e.g. "storm forecast Wed, worth checking again a day or two
-after". Open-Meteo's own forecast skill drops off well before that
-horizon, so this is a heads-up, not a promise. It's shown once at the end,
-not duplicated per day, since it's the same forward-looking info regardless
-of which day's section you're reading.
+That advice is sourced rather than folklore: amber reaches this coast
+when a storm loosens it from the seabed and calmer weather then washes it
+ashore, and it strands in the wrack line among debris of similar density
+— the *ravpindelag*. An earlier version of this project asserted the
+Baltic "onshore wind blows it ashore" story, which does not apply to
+Rømø's North Sea side; the sources are cited on the page itself.
 
 **Stargazing** reports tonight's dark window, the mean cloud cover across
 those hours, how much of the moon is lit, and — when it's meaningfully

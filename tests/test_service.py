@@ -4,8 +4,7 @@ from datetime import date
 
 import pytest
 
-from romo_info.amber import AmberAdvisor
-from romo_info.models import StormOutlook, TideForecast, WeatherForecast
+from romo_info.models import TideForecast, WeatherForecast
 from romo_info.report import ReportFormatter
 from romo_info.service import DailyReportService, _label_for
 from tests.fakes import (
@@ -18,24 +17,10 @@ from tests.fakes import (
 _TODAY_WEATHER = WeatherForecast(
     wind_speed_max_kmh=10.0,
     wind_direction_deg=270.0,
-    recent_onshore_storm=True,
-    recent_storm_lookback_days=3,
-    recent_strongest_onshore_kmh=60.0,
-    recent_strongest_onshore_date=None,
 )
 _TOMORROW_WEATHER = WeatherForecast(
     wind_speed_max_kmh=15.0,
     wind_direction_deg=90.0,
-    recent_onshore_storm=False,
-    recent_storm_lookback_days=4,
-    recent_strongest_onshore_kmh=None,
-    recent_strongest_onshore_date=None,
-)
-_OUTLOOK = StormOutlook(
-    upcoming_storm_date=date(2026, 8, 19),
-    lookahead_through=date(2026, 8, 22),
-    strongest_onshore_date=date(2026, 8, 19),
-    strongest_onshore_wind_kmh=70.0,
 )
 
 
@@ -44,10 +29,9 @@ def _service(
 ) -> DailyReportService:
     return DailyReportService(
         tide_source=FakeTideSource(TideForecast(extremes=()), TideForecast(extremes=())),
-        weather_source=FakeWeatherSource(_TODAY_WEATHER, _TOMORROW_WEATHER, _OUTLOOK),
+        weather_source=FakeWeatherSource(_TODAY_WEATHER, _TOMORROW_WEATHER),
         publisher=publisher,
         formatter=ReportFormatter(),
-        amber_advisor=AmberAdvisor(),
         timezone="UTC",
         days_to_report=days_to_report,
         latitude=55.13,
@@ -92,23 +76,6 @@ def test_run_with_days_to_report_one_omits_tomorrow() -> None:
     assert "Tomorrow" not in html
     assert "10 km/h" in html
     assert "15 km/h" not in html
-
-
-def test_run_includes_amber_note_from_advisor() -> None:
-    publisher = FakeReportPublisher()
-    _service(publisher).run()
-
-    assert "Amber hunting" in publisher.published[0]
-
-
-def test_run_includes_storm_outlook_once() -> None:
-    publisher = FakeReportPublisher()
-    _service(publisher).run()
-
-    # Match the outlook's own wording, not a bare date: the service builds
-    # day headings from the real clock, so a plain "Wed 19 Aug" also matches
-    # "Tomorrow (Wed 19 Aug)" on the days those happen to coincide.
-    assert publisher.published[0].count("Storm forecast") == 1
 
 
 def test_run_propagates_publisher_failures() -> None:
