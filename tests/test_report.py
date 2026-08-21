@@ -164,7 +164,7 @@ def test_all_sections_share_the_card_styling() -> None:
 def test_where_to_look_section_is_present_with_sources() -> None:
     # Static local knowledge, but it makes claims, so it has to cite them.
     html = ReportFormatter().format(_report())
-    assert "Where to find amber" in html
+    assert "Amber" in html
     assert "Lakolk" in html
     assert "ravpindelag" in html
     assert "Sources:" in html
@@ -186,9 +186,11 @@ def test_page_credits_ravvejr_rather_than_restating_their_forecast() -> None:
     assert "ravvejr.dk/lakolk-strand/" in html
 
 
-def test_day_cards_carry_a_group_label() -> None:
-    # Three near-identical cards in a row need something to say where the
-    # daily data ends; the other sections' own headings already do that.
+def test_all_three_sections_are_headed_the_same_way() -> None:
+    # Peers must look like peers. The days used to get a faded outside
+    # label while amber and stargazing carried bold titles inside their
+    # cards, so the three sections read as unrelated things.
     html = ReportFormatter().format(_report())
-    assert '<h2 class="group">Tides &amp; wind</h2>' in html
-    assert html.index("Tides &amp; wind") < html.index("Where to find amber")
+    for heading in ("Tides &amp; wind", "Amber", "Stargazing"):
+        assert f'<h2 class="group">{heading}</h2>' in html
+    assert html.index("Tides &amp; wind") < html.index("Amber") < html.index("Stargazing")

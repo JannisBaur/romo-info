@@ -15,8 +15,8 @@ _ARROW = {TideDirection.HIGH: "⬆️ High", TideDirection.LOW: "⬇️ Low"}
 
 # Fixed local knowledge -- it doesn't change day to day, so it's baked in
 # rather than fetched. Sourced rather than folklore: see the links below.
-_WHERE_TO_LOOK = """<section class="card tips">
-<h2>Where to find amber</h2>
+_WHERE_TO_LOOK = """<h2 class="group">Amber</h2>
+<section class="card tips">
 <p class="lead">For odds, check
 <a href="https://ravvejr.dk/lakolk-strand/">Ravvejr's 5-day amber forecast for Lakolk</a>.
 Below is just where and how to look once you're there.</p>
@@ -75,18 +75,13 @@ h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
 }
 .card p:last-child { margin-bottom: 0; }
 .card ul { margin: 0 0 0.75rem; padding-left: 1.1rem; }
-/* A divider above the day cards, not a title -- they are the only
-   repeated group on the page, so they are the only one that needs
-   saying where it ends. The other sections' own headings already do
-   that job, and labelling them again would repeat the same word one
-   line apart. */
-.group {
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #767676;
-  margin: 1.75rem 0 0.5rem;
-}
+/* The page's three sections. They sit above the cards rather than
+   inside them so all three are named the same way -- previously the
+   days got a faded outside label while amber and stargazing carried
+   bold titles within their cards, which made peers look unrelated.
+   Sized between the page title and a card heading, so the hierarchy
+   reads h1 > section > card. */
+.group { font-size: 1.25rem; margin: 2rem 0 0.5rem; }
 .wind { color: #767676; font-size: 0.9rem; }
 .lead { margin-top: 0; }
 .tips ul { margin: 0; padding-left: 1.1rem; }
@@ -131,8 +126,8 @@ class ReportFormatter:
 <h2 class="group">Tides &amp; wind</h2>
 {days_html}
 {_WHERE_TO_LOOK}
+<h2 class="group">Stargazing</h2>
 <section class="card stars">
-<h2>Stargazing tonight</h2>
 <p>{stargazing}</p>
 {meteors}<p class="requested">Requested by Pia \U0001f31f</p>
 </section>
