@@ -134,7 +134,23 @@ h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
 .tips ul { margin: 0; padding-left: 1.1rem; }
 .tips li { margin-bottom: 0.5rem; }
 .sources { font-size: 0.8rem; color: #767676; margin-top: 0.9rem; }
-.disclaimer { font-size: 0.8rem; margin-top: 0.75rem; text-align: left; }
+/* Five lines of small print hanging under a centred credit line read as
+   a mistake rather than a choice. Centring them instead would give five
+   ragged edges, which is worse -- so it keeps its left edge and is set
+   apart deliberately, with a rule above it. Its left edge sits at the
+   body edge, the same line the section headings and card borders use,
+   so it lines up with the page instead of floating free. */
+.disclaimer {
+  text-align: left;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  margin: 1.25rem 0 0;
+  padding: 0.9rem 0 0;
+  border-top: 1px solid #80808040;
+  /* Avoids leaving the last line a lone orphan word. Purely cosmetic:
+     browsers without it just wrap normally. */
+  text-wrap: pretty;
+}
 .requested { font-size: 0.8rem; color: #767676; margin-top: 0.6rem; }
 .meteors { margin-top: 0.6rem; }
 .amber { margin-top: 0.75rem; }
